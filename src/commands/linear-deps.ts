@@ -1,6 +1,6 @@
 import { GluegunCommand, http } from 'gluegun'
 
-import { digraph } from 'graphviz'
+import { attribute as _, Digraph, Subgraph, Node, Edge, toDot } from 'ts-graphviz'
 
 async function findProject(api, projectSubstring) {
   const { ok, data } = await api.post('/graphql', {
@@ -88,15 +88,19 @@ async function findRelatedIssues(api, projectId) {
 }
 
 function buildGraph(issues) {
-  const graph = digraph('G')
+  const graph = new Digraph()
+  const subgraph = new Subgraph('Celo')
+  graph.addSubgraph(subgraph)
+
   const nodes = {}
   const titles = {}
 
   for (const issue of issues) {
     const title = `${issue.identifier}: ${issue.title}`
     titles[issue.identifier] = title
-    const node = graph.addNode(issue.identifier, { label: title })
-    nodes[title] = node
+    const node = new Node(issue.identifier, { [_.label]: title })
+    subgraph.addNode(node)
+    nodes[issue.identifier] = node
     // console.log(issue.identifier)
   }
 
@@ -105,14 +109,19 @@ function buildGraph(issues) {
       continue
     }
     console.warn(titles[issue.identifier])
+    const node = nodes[issue.identifier]
     for (const rel of issue.relations.nodes) {
       const relatedIssue = rel.relatedIssue.identifier
+      const relatedNode = nodes[relatedIssue]
       if (!titles[relatedIssue]) {
         // Related issue must be outside this project; ignore.
         continue
       }
       if (rel.type === 'blocks') {
-        graph.addEdge(issue.identifier, relatedIssue)
+        const edge = new Edge([node, relatedNode], {
+          [_.label]: rel.type,
+        })
+        subgraph.addEdge(edge)
         console.warn(`  ${rel.type} ${titles[relatedIssue]}`)
       }
     }
@@ -138,7 +147,7 @@ const command: GluegunCommand = {
 
     const issues = await findRelatedIssues(api, project.id)
     const graph = buildGraph(issues)
-    console.log(graph.to_dot())
+    console.log(toDot(graph))
   },
 }
 
