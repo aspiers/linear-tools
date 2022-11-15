@@ -58,6 +58,58 @@ async function findProject(api, projectSubstring) {
   return projects[0]
 }
 
+async function findRelatedIssues(api, projectId) {
+  const { ok, data } = await api.post('/graphql', {
+    query: `
+      query Dependencies($projectId: String!) {
+        project(id: $projectId) {
+          name
+          issues {
+            nodes {
+              identifier
+              title
+              relations {
+                nodes {
+                  type
+                  relatedIssue {
+                    identifier
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    variables: { projectId },
+  })
+
+  if (!ok) {
+    print.error(data)
+    return null
+  }
+
+  if (!data.data) {
+    print.error(`Got no data field in response`)
+    console.error(data)
+    return null
+  }
+
+  if (!data.data.project) {
+    print.error(`Got no data.project field in response`)
+    console.error(data)
+    return null
+  }
+
+  if (!data.data.project.issues) {
+    print.error(`Got no data.project.issues field in response`)
+    console.error(data)
+    return null
+  }
+
+  return data.data.project.issues
+}
+
 const command: GluegunCommand = {
   name: 'linear-deps',
   run: async () => {
@@ -71,7 +123,10 @@ const command: GluegunCommand = {
 
     const project = await findProject(api, 'Celo Retirements')
     if (!project) return
-    print.info(project)
+    print.info(`Found project '${project.name}' with id ${project.id}`)
+
+    const issues = await findRelatedIssues(api, project.id)
+    console.log(issues)
   },
 }
 
