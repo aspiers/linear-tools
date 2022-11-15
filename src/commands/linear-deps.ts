@@ -29,17 +29,20 @@ async function findProject(api, projectSubstring) {
   }
 
   if (!data.data) {
-    print.error(`Got no data field in response: ${data}`)
+    print.error(`Got no data field in response`)
+    console.error(data)
     return null
   }
 
   if (!data.data.projects) {
-    print.error(`Got no data.projects field in response: ${data}`)
+    print.error(`Got no data.projects field in response`)
+    console.error(data)
     return null
   }
 
   if (!data.data.projects.nodes) {
-    print.error(`Got no data.projects.nodes field in response: ${data}`)
+    print.error(`Got no data.projects.nodes field in response`)
+    console.error(data)
     return null
   }
 
