@@ -1,4 +1,6 @@
-import { GluegunCommand, print, http } from 'gluegun'
+import { GluegunCommand, http } from 'gluegun'
+
+import { digraph } from 'graphviz'
 
 async function findProject(api, projectSubstring) {
   const { ok, data } = await api.post('/graphql', {
@@ -24,33 +26,21 @@ async function findProject(api, projectSubstring) {
   })
 
   if (!ok) {
-    print.error(data)
-    return null
-  }
-
-  if (!data.data) {
-    print.error(`Got no data field in response`)
     console.error(data)
     return null
   }
 
-  if (!data.data.projects) {
-    print.error(`Got no data.projects field in response`)
-    console.error(data)
-    return null
-  }
-
-  if (!data.data.projects.nodes) {
-    print.error(`Got no data.projects.nodes field in response`)
+  if (!data?.data?.projects?.nodes) {
+    console.error(`Couldn't find data.projects.nodes field in response`)
     console.error(data)
     return null
   }
 
   const projects = data.data.projects.nodes
   if (projects.length != 1) {
-    print.warning(`Found ${projects.length} projects:`)
+    console.warn(`Found ${projects.length} projects:`)
     for (const project of projects) {
-      print.warning(`  ${project.name}`)
+      console.warn(`  ${project.name}`)
     }
     return null
   }
@@ -85,29 +75,43 @@ async function findRelatedIssues(api, projectId) {
   })
 
   if (!ok) {
-    print.error(data)
+    console.error(data)
     return null
   }
-
-  if (!data.data) {
-    print.error(`Got no data field in response`)
+  if (!data?.data?.project?.issues?.nodes) {
+    console.error(`Couldn't find data.project.issues.nodes field in response`)
     console.error(data)
     return null
   }
 
-  if (!data.data.project) {
-    print.error(`Got no data.project field in response`)
-    console.error(data)
-    return null
+  return data.data.project.issues.nodes
+}
+
+function buildGraph(issues) {
+  const graph = digraph('G')
+  const nodes = {}
+
+  for (const issue of issues) {
+    const title = `${issue.identifier}: ${issue.title}`
+    const node = graph.addNode(issue.identifier, {label: title})
+    nodes[title] = node;
+    // console.log(issue.identifier)
+
+    if (issue.relations.nodes) {
+      for (const rel of issue.relations.nodes) {
+        const relatedIssue = rel.relatedIssue.identifier;
+        // console.log(`  ${rel.type} ${relatedIssue}`)
+        if (rel.type === 'blocks') {
+          graph.addEdge(issue.identifier, relatedIssue)
+        }
+        else if (rel.type == 'related') {
+
+        }
+      }
+    }
   }
 
-  if (!data.data.project.issues) {
-    print.error(`Got no data.project.issues field in response`)
-    console.error(data)
-    return null
-  }
-
-  return data.data.project.issues
+  return graph
 }
 
 const command: GluegunCommand = {
@@ -123,10 +127,11 @@ const command: GluegunCommand = {
 
     const project = await findProject(api, 'Celo Retirements')
     if (!project) return
-    print.info(`Found project '${project.name}' with id ${project.id}`)
+    console.warn(`Found project '${project.name}' with id ${project.id}`)
 
     const issues = await findRelatedIssues(api, project.id)
-    console.log(issues)
+    const graph = buildGraph(issues)
+    console.log(graph.to_dot())
   },
 }
 
