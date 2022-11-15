@@ -90,23 +90,30 @@ async function findRelatedIssues(api, projectId) {
 function buildGraph(issues) {
   const graph = digraph('G')
   const nodes = {}
+  const titles = {}
 
   for (const issue of issues) {
     const title = `${issue.identifier}: ${issue.title}`
-    const node = graph.addNode(issue.identifier, {label: title})
-    nodes[title] = node;
+    titles[issue.identifier] = title
+    const node = graph.addNode(issue.identifier, { label: title })
+    nodes[title] = node
     // console.log(issue.identifier)
+  }
 
-    if (issue.relations.nodes) {
-      for (const rel of issue.relations.nodes) {
-        const relatedIssue = rel.relatedIssue.identifier;
-        // console.log(`  ${rel.type} ${relatedIssue}`)
-        if (rel.type === 'blocks') {
-          graph.addEdge(issue.identifier, relatedIssue)
-        }
-        else if (rel.type == 'related') {
-
-        }
+  for (const issue of issues) {
+    if (!issue.relations.nodes) {
+      continue
+    }
+    console.warn(titles[issue.identifier])
+    for (const rel of issue.relations.nodes) {
+      const relatedIssue = rel.relatedIssue.identifier
+      if (!titles[relatedIssue]) {
+        // Related issue must be outside this project; ignore.
+        continue
+      }
+      if (rel.type === 'blocks') {
+        graph.addEdge(issue.identifier, relatedIssue)
+        console.warn(`  ${rel.type} ${titles[relatedIssue]}`)
       }
     }
   }
