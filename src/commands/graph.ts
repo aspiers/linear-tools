@@ -92,6 +92,10 @@ async function findRelatedIssues(api, projectId) {
               identifier
               title
               description
+              state {
+                name
+                color
+              }
               children {
                 nodes {
                   identifier
@@ -148,6 +152,8 @@ function buildGraph(issues) {
       [_.label]: title,
       [_.tooltip]: issue.description,
       [_.URL]: url,
+      [_.fillcolor]: issue.state.color,
+      [_.style]: 'filled',
     })
     nodes[issue.identifier] = node
     // console.log(`new graph node for ${issue.identifier}`)
