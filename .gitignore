@@ -6,3 +6,6 @@ coverage
 dist
 build
 .vscode
+*.dot
+*.dot.svg
+*.dot.png
