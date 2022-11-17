@@ -9,6 +9,10 @@ import {
   toDot,
 } from 'ts-graphviz'
 
+// The most 1337 c0d3rZ all copy and paste from stackoverflow
+// https://stackoverflow.com/questions/14484787/wrap-text-in-javascript
+const wrap = (s) => s.replace(/(?![^\n]{1,32}$)([^\n]{1,32})\s/g, '$1\n')
+
 async function findProject(api, projectSubstring) {
   const { ok, data } = await api.post('/graphql', {
     query: `
@@ -65,6 +69,12 @@ async function findRelatedIssues(api, projectId) {
             nodes {
               identifier
               title
+              description
+              children {
+                nodes {
+                  identifier
+                }
+              }
               relations {
                 nodes {
                   type
@@ -103,24 +113,49 @@ function buildGraph(issues) {
   graph.addSubgraph(subgraph)
 
   const nodes = {}
+  const stitles = {}
   const titles = {}
 
   for (const issue of issues) {
-    const title = `${issue.identifier}: ${issue.title}`
+    const stitle = `${issue.identifier}: ${issue.title}`
+    const title = `${issue.identifier}:\n${wrap(issue.title)}`
+    stitles[issue.identifier] = stitle
     titles[issue.identifier] = title
-    const node = new Node(issue.identifier, { [_.label]: title })
-    subgraph.addNode(node)
+    const url = `https://linear.app/toucan/issue/${issue.identifier}`
+    const node = new Node(issue.identifier, {
+      [_.label]: title,
+      [_.tooltip]: issue.description,
+      [_.URL]: url,
+    })
     nodes[issue.identifier] = node
-    // console.log(issue.identifier)
+    // console.log(`new graph node for ${issue.identifier}`)
   }
 
   for (const issue of issues) {
-    if (!issue.relations.nodes) {
+    console.warn(stitles[issue.identifier])
+    const node = nodes[issue.identifier]
+    const children = issue.children.nodes
+    const relations = issue.relations.nodes
+    if (!children.length && !relations.length) {
       continue
     }
-    console.warn(titles[issue.identifier])
-    const node = nodes[issue.identifier]
-    for (const rel of issue.relations.nodes) {
+    subgraph.addNode(node)
+
+    for (const child of children) {
+      const childIssue = child.identifier
+      const childNode = nodes[childIssue]
+      if (!titles[childIssue]) {
+        // Related issue must be outside this project; ignore.
+        continue
+      }
+      const edge = new Edge([node, childNode], {
+        [_.label]: 'has child',
+      })
+      subgraph.addEdge(edge)
+      console.warn(`  has child ${stitles[childIssue]}`)
+    }
+
+    for (const rel of relations) {
       const relatedIssue = rel.relatedIssue.identifier
       const relatedNode = nodes[relatedIssue]
       if (!titles[relatedIssue]) {
@@ -132,7 +167,7 @@ function buildGraph(issues) {
           [_.label]: rel.type,
         })
         subgraph.addEdge(edge)
-        console.warn(`  ${rel.type} ${titles[relatedIssue]}`)
+        console.warn(`  ${rel.type} ${stitles[relatedIssue]}`)
       }
     }
   }
