@@ -9,6 +9,7 @@ import {
   Node,
   NodeAttributesObject,
   Edge,
+  EdgeTargetTuple,
   toDot,
 } from 'ts-graphviz'
 
@@ -163,6 +164,17 @@ function registerNode(subgraph, nodes, titles, stitles, issue) {
   return node
 }
 
+function addEdge(subgraph, relType, node, relatedNode) {
+  let label = relType
+  let endpoints: EdgeTargetTuple = [node, relatedNode]
+  if (relType === 'duplicate') {
+    endpoints = [relatedNode, node]
+    label = 'duplicate of'
+  }
+  const edge = new Edge(endpoints, { [_.label]: label })
+  subgraph.addEdge(edge)
+}
+
 function buildGraph(issues) {
   const graph = new Digraph('G', {
     [_.overlap]: false,
@@ -196,16 +208,13 @@ function buildGraph(issues) {
         // Child issue wasn't registered yet; must be outside this project.
         childNode = registerNode(subgraph, nodes, titles, stitles, child)
       }
-      const edge = new Edge([node, childNode], {
-        [_.label]: 'has child',
-      })
-      subgraph.addEdge(edge)
+      addEdge(subgraph, 'has child', node, childNode)
       console.warn(`  has child ${stitles[childId]}`)
     }
 
     for (const rel of relations) {
       const relatedId = rel.relatedIssue.identifier
-      if (rel.type !== 'blocks') {
+      if (!['blocks', 'duplicate'].includes(rel.type)) {
         continue
       }
       let relatedNode = nodes[relatedId]
@@ -219,10 +228,7 @@ function buildGraph(issues) {
           rel.relatedIssue
         )
       }
-      const edge = new Edge([node, relatedNode], {
-        [_.label]: rel.type,
-      })
-      subgraph.addEdge(edge)
+      addEdge(subgraph, rel.type, node, relatedNode)
       console.warn(`  ${rel.type} ${stitles[relatedId]}`)
     }
   }
