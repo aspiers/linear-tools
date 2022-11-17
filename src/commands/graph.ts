@@ -199,8 +199,8 @@ function addEdge(subgraph, relType, node, relatedNode) {
   subgraph.addEdge(edge)
 }
 
-function buildGraph(issues) {
-  const graph = new Digraph('G', {
+function buildGraph(projectName, issues) {
+  const graph = new Digraph(projectName, {
     [_.overlap]: false,
     [_.ranksep]: 4,
   })
@@ -276,7 +276,7 @@ const command: GluegunCommand = {
     console.warn(`Found project '${project.name}' with id ${project.id}`)
 
     const issues = await findRelatedIssues(api, project.id)
-    const graph = buildGraph(issues)
+    const graph = buildGraph(project.name, issues)
     console.log(toDot(graph))
   },
 }
