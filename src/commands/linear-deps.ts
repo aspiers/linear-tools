@@ -1,6 +1,13 @@
 import { GluegunCommand, http } from 'gluegun'
 
-import { attribute as _, Digraph, Subgraph, Node, Edge, toDot } from 'ts-graphviz'
+import {
+  attribute as _,
+  Digraph,
+  Subgraph,
+  Node,
+  Edge,
+  toDot,
+} from 'ts-graphviz'
 
 async function findProject(api, projectSubstring) {
   const { ok, data } = await api.post('/graphql', {
