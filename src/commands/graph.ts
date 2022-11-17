@@ -24,12 +24,12 @@ type Project = {
   description: string
 }
 
-const PRIORITY_COLORS = {
-  0: '#555555', // no priority
-  1: 'red', // urgent
-  2: 'orange', // high
-  3: 'yellow', // medium
-  4: 'blue', // low
+const PRIORITIES = {
+  0: ['#555555', 'No priority'],
+  1: ['red', 'Urgent'],
+  2: ['orange', 'High'],
+  3: ['yellow', 'Medium'],
+  4: ['blue', 'Low'],
 }
 
 async function findProjectsMatchingSubstring(
@@ -161,7 +161,12 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
     [_.label]: label,
     [_.URL]: url,
   }
-  nodeAttrs[_.tooltip] = issue.description || 'No description.'
+  const state = issue?.state?.name || 'Unknown state'
+  const priority =
+    issue.priority !== undefined ? PRIORITIES[issue.priority][1] : 'unknown'
+  const tooltipHeader = `${state}     Priority: ${priority}\n\n`
+  nodeAttrs[_.tooltip] =
+    tooltipHeader + (issue.description || 'No description.')
   if (issue.state) {
     nodeAttrs[_.fillcolor] = issue.state.color
     nodeAttrs[_.style] = 'filled'
@@ -173,7 +178,7 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
   }
   if (issue.priority !== undefined) {
     nodeAttrs[_.penwidth] = 5
-    nodeAttrs[_.color] = PRIORITY_COLORS[issue.priority]
+    nodeAttrs[_.color] = PRIORITIES[issue.priority][0]
   }
   const node = new Node(issue.identifier, nodeAttrs)
   nodes[issue.identifier] = node
