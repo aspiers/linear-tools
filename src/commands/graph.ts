@@ -24,6 +24,14 @@ type Project = {
   description: string
 }
 
+const PRIORITY_COLORS = {
+  0: '#555555', // no priority
+  1: 'red', // urgent
+  2: 'orange', // high
+  3: 'yellow', // medium
+  4: 'blue', // low
+}
+
 async function findProjectsMatchingSubstring(
   api,
   projectSubstring
@@ -102,6 +110,7 @@ async function findRelatedIssues(api, projectId) {
                 name
                 color
               }
+              priority
               children {
                 nodes {
                   identifier
@@ -161,6 +170,10 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
     }
   } else {
     nodeAttrs[_.shape] = 'doubleoctagon'
+  }
+  if (issue.priority !== undefined) {
+    nodeAttrs[_.penwidth] = 5
+    nodeAttrs[_.color] = PRIORITY_COLORS[issue.priority]
   }
   const node = new Node(issue.identifier, nodeAttrs)
   nodes[issue.identifier] = node
