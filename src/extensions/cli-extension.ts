@@ -8,10 +8,10 @@ module.exports = (toolbox: GluegunToolbox) => {
   }
 
   // enable this if you want to read configuration in from
-  // the current folder's package.json (in a "linear-deps" property),
-  // linear-deps.config.json, etc.
+  // the current folder's package.json (in a "linear" property),
+  // linear.config.json, etc.
   // toolbox.config = {
   //   ...toolbox.config,
-  //   ...toolbox.config.loadConfig("linear-deps", process.cwd())
+  //   ...toolbox.config.loadConfig("linear", process.cwd())
   // }
 }

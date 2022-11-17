@@ -3,7 +3,7 @@ import { system, filesystem } from 'gluegun'
 const src = filesystem.path(__dirname, '..')
 
 const cli = async (cmd) =>
-  system.run('node ' + filesystem.path(src, 'bin', 'linear-deps') + ` ${cmd}`)
+  system.run('node ' + filesystem.path(src, 'bin', 'linear') + ` ${cmd}`)
 
 test('outputs version', async () => {
   const output = await cli('--version')

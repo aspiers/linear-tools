@@ -1,10 +1,10 @@
-# Plugin guide for linear-deps
+# Plugin guide for linear
 
-Plugins allow you to add features to linear-deps, such as commands and
+Plugins allow you to add features to linear, such as commands and
 extensions to the `toolbox` object that provides the majority of the functionality
-used by linear-deps.
+used by linear.
 
-Creating a linear-deps plugin is easy. Just create a repo with two folders:
+Creating a linear plugin is easy. Just create a repo with two folders:
 
 ```
 commands/
@@ -42,6 +42,6 @@ This is then accessible in your plugin's commands as `toolbox.bar`.
 
 # Loading a plugin
 
-To load a particular plugin (which has to start with `linear-deps-*`),
-install it to your project using `npm install --save-dev linear-deps-PLUGINNAME`,
-and linear-deps will pick it up automatically.
+To load a particular plugin (which has to start with `linear-*`),
+install it to your project using `npm install --save-dev linear-PLUGINNAME`,
+and linear will pick it up automatically.

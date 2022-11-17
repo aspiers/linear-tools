@@ -1,6 +1,6 @@
 # linear CLI
 
-A CLI for linear-deps.
+A CLI for linear.
 
 ## Customizing your CLI
 
