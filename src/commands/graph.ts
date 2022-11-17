@@ -156,6 +156,7 @@ function buildGraph(issues) {
       [_.style]: 'filled',
     })
     nodes[issue.identifier] = node
+    subgraph.addNode(node)
     // console.log(`new graph node for ${issue.identifier}`)
   }
 
@@ -167,7 +168,6 @@ function buildGraph(issues) {
     if (!children.length && !relations.length) {
       continue
     }
-    subgraph.addNode(node)
 
     for (const child of children) {
       const childIssue = child.identifier
