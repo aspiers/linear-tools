@@ -13,7 +13,17 @@ import {
 // https://stackoverflow.com/questions/14484787/wrap-text-in-javascript
 const wrap = (s) => s.replace(/(?![^\n]{1,32}$)([^\n]{1,32})\s/g, '$1\n')
 
-async function findProject(api, projectSubstring) {
+type Project = {
+  id: string
+  slugId: string
+  name: string
+  description: string
+}
+
+async function findProjectsMatchingSubstring(
+  api,
+  projectSubstring
+): Promise<Array<Project> | null> {
   const { ok, data } = await api.post('/graphql', {
     query: `
       query Projects($filter: ProjectFilter) {
@@ -47,7 +57,18 @@ async function findProject(api, projectSubstring) {
     return null
   }
 
-  const projects = data.data.projects.nodes
+  return data.data.projects.nodes
+}
+
+async function findProjectMatchingSubstring(
+  api,
+  projectSubstring
+): Promise<Project | null> {
+  const projects = await findProjectsMatchingSubstring(api, projectSubstring)
+  if (!projects) {
+    return null
+  }
+
   if (projects.length != 1) {
     console.warn(`Found ${projects.length} projects:`)
     for (const project of projects) {
@@ -186,7 +207,7 @@ const command: GluegunCommand = {
       },
     })
 
-    const project = await findProject(api, 'Celo Retirements')
+    const project = await findProjectMatchingSubstring(api, 'Celo Retirements')
     if (!project) return
     console.warn(`Found project '${project.name}' with id ${project.id}`)
 
