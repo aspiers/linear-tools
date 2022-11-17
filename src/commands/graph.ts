@@ -213,7 +213,7 @@ function buildGraph(issues) {
         // Child issue wasn't registered yet; must be outside this project.
         childNode = registerNode(subgraph, nodes, labels, idTitles, child)
       }
-      addEdge(subgraph, 'has child', node, childNode)
+      addEdge(subgraph, 'has parent', childNode, node)
       console.warn(`  has child ${idTitles[childId]}`)
     }
 
