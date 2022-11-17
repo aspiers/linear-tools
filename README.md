@@ -1,23 +1,22 @@
-# linear CLI
+# linear.app CLI
 
-A CLI for linear.
+A CLI for [linear.app](https://linear.app) for analysing issue data.
 
-## Customizing your CLI
-
-Check out the documentation at https://github.com/infinitered/gluegun/tree/master/docs.
-
-## Publishing to NPM
-
-To package your CLI up for NPM, do this:
+## Installation
 
 ```shell
-$ npm login
-$ npm whoami
-$ npm test
+yarn install
+brew install graphviz
+```
 
-$ npm run build
+## Usage
 
-$ npm publish
+```shell
+yarn linear graph "My Linear project" > my-project.dot
+
+# Generate images
+dot -Tsvg -O my-project.dot
+dot -Tpng -O my-project.dot
 ```
 
 # License
