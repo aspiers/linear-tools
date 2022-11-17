@@ -1,4 +1,4 @@
-# linear-deps CLI
+# linear CLI
 
 A CLI for linear-deps.
 
@@ -23,4 +23,3 @@ $ npm publish
 # License
 
 MIT - see LICENSE
-
