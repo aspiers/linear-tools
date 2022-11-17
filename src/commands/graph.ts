@@ -132,6 +132,27 @@ async function findRelatedIssues(api, projectId) {
   return data.project.issues.nodes
 }
 
+function registerNode(subgraph, nodes, titles, stitles, issue) {
+  const stitle = `${issue.identifier}: ${issue.title}`
+  const title = `${issue.identifier}:\n${wrap(issue.title)}`
+  stitles[issue.identifier] = stitle
+  titles[issue.identifier] = title
+  const url = `https://linear.app/toucan/issue/${issue.identifier}`
+  const nodeAttrs: NodeAttributesObject = {
+    [_.label]: title,
+    [_.tooltip]: issue.description,
+    [_.URL]: url,
+    [_.fillcolor]: issue.state.color,
+    [_.style]: 'filled',
+  }
+  if (Color(issue.state.color).isDark()) {
+    nodeAttrs[_.fontcolor] = 'white'
+  }
+  const node = new Node(issue.identifier, nodeAttrs)
+  nodes[issue.identifier] = node
+  subgraph.addNode(node)
+}
+
 function buildGraph(issues) {
   const graph = new Digraph('G', {
     [_.overlap]: false,
@@ -145,24 +166,7 @@ function buildGraph(issues) {
   const titles = {}
 
   for (const issue of issues) {
-    const stitle = `${issue.identifier}: ${issue.title}`
-    const title = `${issue.identifier}:\n${wrap(issue.title)}`
-    stitles[issue.identifier] = stitle
-    titles[issue.identifier] = title
-    const url = `https://linear.app/toucan/issue/${issue.identifier}`
-    const nodeAttrs: NodeAttributesObject = {
-      [_.label]: title,
-      [_.tooltip]: issue.description,
-      [_.URL]: url,
-      [_.fillcolor]: issue.state.color,
-      [_.style]: 'filled',
-    }
-    if (Color(issue.state.color).isDark()) {
-      nodeAttrs[_.fontcolor] = 'white'
-    }
-    const node = new Node(issue.identifier, nodeAttrs)
-    nodes[issue.identifier] = node
-    subgraph.addNode(node)
+    registerNode(subgraph, nodes, titles, stitles, issue)
     // console.log(`new graph node for ${issue.identifier}`)
   }
 
