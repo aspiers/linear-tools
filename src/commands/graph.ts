@@ -137,14 +137,14 @@ async function findRelatedIssues(api, projectId) {
   return data.project.issues.nodes
 }
 
-function registerNode(subgraph, nodes, titles, stitles, issue) {
-  const stitle = `${issue.identifier}: ${issue.title}`
-  const title = `${issue.identifier}:\n${wrap(issue.title)}`
-  stitles[issue.identifier] = stitle
-  titles[issue.identifier] = title
+function registerNode(subgraph, nodes, labels, idTitles, issue) {
+  const idTitle = `${issue.identifier}: ${issue.title}`
+  const label = `${issue.identifier}:\n${wrap(issue.title)}`
+  idTitles[issue.identifier] = idTitle
+  labels[issue.identifier] = label
   const url = `https://linear.app/toucan/issue/${issue.identifier}`
   const nodeAttrs: NodeAttributesObject = {
-    [_.label]: title,
+    [_.label]: label,
     [_.URL]: url,
   }
   nodeAttrs[_.tooltip] = issue.description || 'No description.'
@@ -184,16 +184,16 @@ function buildGraph(issues) {
   graph.addSubgraph(subgraph)
 
   const nodes = {}
-  const stitles = {}
-  const titles = {}
+  const idTitles = {}
+  const labels = {}
 
   for (const issue of issues) {
-    registerNode(subgraph, nodes, titles, stitles, issue)
+    registerNode(subgraph, nodes, labels, idTitles, issue)
   }
   console.warn(`Registered all issues in project`)
 
   for (const issue of issues) {
-    console.warn(stitles[issue.identifier])
+    console.warn(idTitles[issue.identifier])
     const node = nodes[issue.identifier]
     const children = issue.children.nodes
     const relations = issue.relations.nodes
@@ -206,10 +206,10 @@ function buildGraph(issues) {
       let childNode = nodes[childId]
       if (!childNode) {
         // Child issue wasn't registered yet; must be outside this project.
-        childNode = registerNode(subgraph, nodes, titles, stitles, child)
+        childNode = registerNode(subgraph, nodes, labels, idTitles, child)
       }
       addEdge(subgraph, 'has child', node, childNode)
-      console.warn(`  has child ${stitles[childId]}`)
+      console.warn(`  has child ${idTitles[childId]}`)
     }
 
     for (const rel of relations) {
@@ -223,13 +223,13 @@ function buildGraph(issues) {
         relatedNode = registerNode(
           subgraph,
           nodes,
-          titles,
-          stitles,
+          labels,
+          idTitles,
           rel.relatedIssue
         )
       }
       addEdge(subgraph, rel.type, node, relatedNode)
-      console.warn(`  ${rel.type} ${stitles[relatedId]}`)
+      console.warn(`  ${rel.type} ${idTitles[relatedId]}`)
     }
   }
 
