@@ -1,11 +1,13 @@
 import { GluegunToolbox, GluegunCommand } from 'gluegun'
 import { LinearClient } from '@linear/sdk'
+import * as Color from 'color'
 
 import {
   attribute as _,
   Digraph,
   Subgraph,
   Node,
+  NodeAttributesObject,
   Edge,
   toDot,
 } from 'ts-graphviz'
@@ -148,13 +150,17 @@ function buildGraph(issues) {
     stitles[issue.identifier] = stitle
     titles[issue.identifier] = title
     const url = `https://linear.app/toucan/issue/${issue.identifier}`
-    const node = new Node(issue.identifier, {
+    const nodeAttrs: NodeAttributesObject = {
       [_.label]: title,
       [_.tooltip]: issue.description,
       [_.URL]: url,
       [_.fillcolor]: issue.state.color,
       [_.style]: 'filled',
-    })
+    }
+    if (Color(issue.state.color).isDark()) {
+      nodeAttrs[_.fontcolor] = 'white'
+    }
+    const node = new Node(issue.identifier, nodeAttrs)
     nodes[issue.identifier] = node
     subgraph.addNode(node)
     // console.log(`new graph node for ${issue.identifier}`)
