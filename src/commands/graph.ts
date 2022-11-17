@@ -180,9 +180,9 @@ function buildGraph(issues) {
     }
 
     for (const child of children) {
-      const childIssue = child.identifier
-      const childNode = nodes[childIssue]
-      if (!titles[childIssue]) {
+      const childId = child.identifier
+      const childNode = nodes[childId]
+      if (!titles[childId]) {
         // Related issue must be outside this project; ignore.
         continue
       }
@@ -190,13 +190,13 @@ function buildGraph(issues) {
         [_.label]: 'has child',
       })
       subgraph.addEdge(edge)
-      console.warn(`  has child ${stitles[childIssue]}`)
+      console.warn(`  has child ${stitles[childId]}`)
     }
 
     for (const rel of relations) {
-      const relatedIssue = rel.relatedIssue.identifier
-      const relatedNode = nodes[relatedIssue]
-      if (!titles[relatedIssue]) {
+      const relatedId = rel.relatedIssue.identifier
+      const relatedNode = nodes[relatedId]
+      if (!titles[relatedId]) {
         // Related issue must be outside this project; ignore.
         continue
       }
@@ -205,7 +205,7 @@ function buildGraph(issues) {
           [_.label]: rel.type,
         })
         subgraph.addEdge(edge)
-        console.warn(`  ${rel.type} ${stitles[relatedIssue]}`)
+        console.warn(`  ${rel.type} ${stitles[relatedId]}`)
       }
     }
   }
