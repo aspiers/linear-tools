@@ -204,7 +204,7 @@ function buildGraph(issues) {
 }
 
 const command: GluegunCommand = {
-  name: 'linear',
+  name: 'graph',
   run: async (toolbox: GluegunToolbox) => {
     const linearClient = new LinearClient({
       apiKey: process.env.LINEAR_API_KEY,
