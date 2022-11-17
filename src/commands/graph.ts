@@ -1,4 +1,4 @@
-import { GluegunCommand } from 'gluegun'
+import { GluegunToolbox, GluegunCommand } from 'gluegun'
 import { LinearClient } from '@linear/sdk'
 
 import {
@@ -205,13 +205,16 @@ function buildGraph(issues) {
 
 const command: GluegunCommand = {
   name: 'linear',
-  run: async () => {
+  run: async (toolbox: GluegunToolbox) => {
     const linearClient = new LinearClient({
       apiKey: process.env.LINEAR_API_KEY,
     })
     const api = linearClient.client
 
-    const project = await findProjectMatchingSubstring(api, 'Celo Retirements')
+    const project = await findProjectMatchingSubstring(
+      api,
+      toolbox.parameters.first
+    )
     if (!project) return
     console.warn(`Found project '${project.name}' with id ${project.id}`)
 
