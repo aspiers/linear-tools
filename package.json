@@ -30,6 +30,7 @@
     "@linear/sdk": "^1.22.0",
     "color": "^4.2.3",
     "gluegun": "latest",
+    "html-entities": "^2.3.3",
     "ts-graphviz": "^1.2.3"
   },
   "devDependencies": {

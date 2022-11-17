@@ -1,6 +1,7 @@
 import { GluegunToolbox, GluegunCommand } from 'gluegun'
 import { LinearClient } from '@linear/sdk'
 import * as Color from 'color'
+import { encode } from 'html-entities'
 
 import {
   attribute as _,
@@ -166,7 +167,7 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
     issue.priority !== undefined ? PRIORITIES[issue.priority][1] : 'unknown'
   const tooltipHeader = `${state}     Priority: ${priority}\n\n`
   nodeAttrs[_.tooltip] =
-    tooltipHeader + (issue.description || 'No description.')
+    tooltipHeader + (encode(issue.description) || 'No description.')
   if (issue.state) {
     nodeAttrs[_.fillcolor] = issue.state.color
     nodeAttrs[_.style] = 'filled'
