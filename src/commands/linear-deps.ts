@@ -95,7 +95,10 @@ async function findRelatedIssues(api, projectId) {
 }
 
 function buildGraph(issues) {
-  const graph = new Digraph()
+  const graph = new Digraph('G', {
+    [_.overlap]: false,
+    [_.ranksep]: 4,
+  })
   const subgraph = new Subgraph('Celo')
   graph.addSubgraph(subgraph)
 
