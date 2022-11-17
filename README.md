@@ -1,6 +1,8 @@
-# linear.app CLI
+# linear.app issue tracker analysis
 
 A CLI for [linear.app](https://linear.app) for analysing issue data.
+
+Currently it only plots issue dependency graphs within a given project.
 
 ## Installation
 
