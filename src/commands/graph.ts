@@ -95,6 +95,9 @@ async function findRelatedIssues(api, projectId) {
               identifier
               title
               description
+              assignee {
+                displayName
+              }
               state {
                 name
                 color
@@ -139,7 +142,9 @@ async function findRelatedIssues(api, projectId) {
 
 function registerNode(subgraph, nodes, labels, idTitles, issue) {
   const idTitle = `${issue.identifier}: ${issue.title}`
-  const label = `${issue.identifier}:\n${wrap(issue.title)}`
+  const assignee = issue.assignee?.displayName || '??'
+  const title = `${issue.identifier} (${assignee})`
+  const label = title + '\n' + wrap(issue.title)
   idTitles[issue.identifier] = idTitle
   labels[issue.identifier] = label
   const url = `https://linear.app/toucan/issue/${issue.identifier}`
