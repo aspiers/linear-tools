@@ -1,4 +1,5 @@
-import { GluegunCommand, http } from 'gluegun'
+import { GluegunCommand } from 'gluegun'
+import { LinearClient } from '@linear/sdk'
 
 import {
   attribute as _,
@@ -24,8 +25,8 @@ async function findProjectsMatchingSubstring(
   api,
   projectSubstring
 ): Promise<Array<Project> | null> {
-  const { ok, data } = await api.post('/graphql', {
-    query: `
+  const { status, data } = await api.rawRequest(
+    `
       query Projects($filter: ProjectFilter) {
         projects(filter: $filter) {
           nodes {
@@ -37,27 +38,27 @@ async function findProjectsMatchingSubstring(
         }
       }
     `,
-    variables: {
+    {
       filter: {
         name: {
           contains: projectSubstring,
         },
       },
-    },
-  })
+    }
+  )
 
-  if (!ok) {
+  if (status !== 200) {
     console.error(data)
     return null
   }
 
-  if (!data?.data?.projects?.nodes) {
+  if (!data?.projects?.nodes) {
     console.error(`Couldn't find data.projects.nodes field in response`)
     console.error(data)
     return null
   }
 
-  return data.data.projects.nodes
+  return data.projects.nodes
 }
 
 async function findProjectMatchingSubstring(
@@ -81,8 +82,8 @@ async function findProjectMatchingSubstring(
 }
 
 async function findRelatedIssues(api, projectId) {
-  const { ok, data } = await api.post('/graphql', {
-    query: `
+  const { status, data } = await api.rawRequest(
+    `
       query Dependencies($projectId: String!) {
         project(id: $projectId) {
           name
@@ -109,20 +110,20 @@ async function findRelatedIssues(api, projectId) {
         }
       }
     `,
-    variables: { projectId },
-  })
+    { projectId }
+  )
 
-  if (!ok) {
+  if (status !== 200) {
     console.error(data)
     return null
   }
-  if (!data?.data?.project?.issues?.nodes) {
+  if (!data?.project?.issues?.nodes) {
     console.error(`Couldn't find data.project.issues.nodes field in response`)
     console.error(data)
     return null
   }
 
-  return data.data.project.issues.nodes
+  return data.project.issues.nodes
 }
 
 function buildGraph(issues) {
@@ -199,13 +200,10 @@ function buildGraph(issues) {
 const command: GluegunCommand = {
   name: 'linear-deps',
   run: async () => {
-    const api = http.create({
-      baseURL: 'https://api.linear.app',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: process.env.LINEAR_API_KEY,
-      },
+    const linearClient = new LinearClient({
+      apiKey: process.env.LINEAR_API_KEY,
     })
+    const api = linearClient.client
 
     const project = await findProjectMatchingSubstring(api, 'Celo Retirements')
     if (!project) return
