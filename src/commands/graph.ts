@@ -211,7 +211,17 @@ function addEdge(subgraph, relType, node, relatedNode) {
   subgraph.addEdge(edge)
 }
 
-function buildGraph(projectName, issues) {
+function ignoreRelation(relType: string, options): boolean {
+  if (relType === 'duplicate') {
+    return !options.dupes
+  }
+  if (relType === 'blocks') {
+    return false
+  }
+  return true
+}
+
+function buildGraph(projectName, issues, params) {
   const graph = new Digraph(projectName, {
     [_.overlap]: false,
     [_.ranksep]: 2,
@@ -250,7 +260,9 @@ function buildGraph(projectName, issues) {
 
     for (const rel of relations) {
       const relatedId = rel.relatedIssue.identifier
-      if (!['blocks', 'duplicate'].includes(rel.type)) {
+      const relatedDescr = idTitles[relatedId] || relatedId
+      if (ignoreRelation(rel.type, params.options)) {
+        console.warn(`  ignoring: ${rel.type} ${relatedDescr}`)
         continue
       }
       let relatedNode = nodes[relatedId]
@@ -265,7 +277,7 @@ function buildGraph(projectName, issues) {
         )
       }
       addEdge(subgraph, rel.type, node, relatedNode)
-      console.warn(`  ${rel.type} ${idTitles[relatedId]}`)
+      console.warn(`  ${rel.type} ${relatedDescr}`)
     }
   }
 
@@ -279,16 +291,14 @@ const command: GluegunCommand = {
       apiKey: process.env.LINEAR_API_KEY,
     })
     const api = linearClient.client
+    const params = toolbox.parameters
 
-    const project = await findProjectMatchingSubstring(
-      api,
-      toolbox.parameters.first
-    )
+    const project = await findProjectMatchingSubstring(api, params.first)
     if (!project) return
     console.warn(`Found project '${project.name}' with id ${project.id}`)
 
     const issues = await findRelatedIssues(api, project.id)
-    const graph = buildGraph(project.name, issues)
+    const graph = buildGraph(project.name, issues, params)
     console.log(toDot(graph))
   },
 }
