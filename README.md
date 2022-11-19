@@ -6,10 +6,14 @@ Currently it only plots issue dependency graphs within a given project.
 
 ## Installation
 
-```shell
-yarn install
-brew install graphviz
-```
+First install [Graphviz](https://graphviz.org/).  On MacOS,
+it should be simple using [Homebrew](https://brew.sh/):
+
+    brew install graphviz
+
+Then install the various npm dependencies:
+
+    yarn install
 
 ## Usage
 
