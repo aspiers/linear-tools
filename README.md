@@ -32,6 +32,10 @@ It's recommended to view the generated SVG file in your browser.
 That way you can mouse hover over issues to see descriptions,
 and click on an issue to open it in Linear.
 
+The fill color shows an issue state, and its border color reflects the
+issue's priority.  You can also see these in the first line of the
+tooltip on mouse-over.
+
 # License
 
 MIT - see LICENSE
