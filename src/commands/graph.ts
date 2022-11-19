@@ -191,11 +191,18 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
 function addEdge(subgraph, relType, node, relatedNode) {
   let label = relType
   let endpoints: EdgeTargetTuple = [node, relatedNode]
+  const attrs = { [_.label]: label }
   if (relType === 'duplicate') {
     endpoints = [relatedNode, node]
     label = 'duplicate of'
+    attrs[_.color] = 'red'
+    attrs[_.fontcolor] = 'red'
+  } else if (relType === 'has parent') {
+    attrs[_.color] = 'blue'
+    attrs[_.fontcolor] = 'blue'
   }
-  const edge = new Edge(endpoints, { [_.label]: label })
+
+  const edge = new Edge(endpoints, attrs)
   subgraph.addEdge(edge)
 }
 
