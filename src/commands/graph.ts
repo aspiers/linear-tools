@@ -16,7 +16,12 @@ import {
 
 // The most 1337 c0d3rZ all copy and paste from stackoverflow
 // https://stackoverflow.com/questions/14484787/wrap-text-in-javascript
-const wrap = (s) => s.replace(/(?![^\n]{1,32}$)([^\n]{1,32})\s/g, '$1\n')
+const WRAP_WIDTH = 25
+const WRAP_REGEXP = new RegExp(
+  `(?![^\n]{1,${WRAP_WIDTH}}$)([^\n]{1,${WRAP_WIDTH}})\\s`,
+  'g'
+)
+const wrap = (s) => s.replace(WRAP_REGEXP, '$1\n')
 
 type Project = {
   id: string
@@ -209,7 +214,7 @@ function addEdge(subgraph, relType, node, relatedNode) {
 function buildGraph(projectName, issues) {
   const graph = new Digraph(projectName, {
     [_.overlap]: false,
-    [_.ranksep]: 4,
+    [_.ranksep]: 2,
   })
   const subgraph = new Subgraph('Celo')
   graph.addSubgraph(subgraph)
