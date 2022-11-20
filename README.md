@@ -48,6 +48,11 @@ The fill color shows an issue state, and its border color reflects the
 issue's priority.  You can also see these in the first line of the
 tooltip on mouse-over.
 
+A double octagon border on an issue indicates that it was outside the
+list of issues obtained by querying the specified project, and is only
+on the graph because it had some kind of relationship with issues
+obtained from the query.
+
 # License
 
 MIT - see LICENSE
