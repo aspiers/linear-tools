@@ -272,28 +272,7 @@ function buildGraph(projectName, issues, options) {
     }
 
     addChildren(subgraph, nodes, labels, idTitles, node, children)
-
-    for (const rel of relations) {
-      const relatedId = rel.relatedIssue.identifier
-      const relatedDescr = idTitles[relatedId] || relatedId
-      if (ignoreRelation(rel.type, options)) {
-        console.warn(`  ignoring: ${rel.type} ${relatedDescr}`)
-        continue
-      }
-      let relatedNode = nodes[relatedId]
-      if (!relatedNode) {
-        // Related issue wasn't registered yet; must be outside this project.
-        relatedNode = registerNode(
-          subgraph,
-          nodes,
-          labels,
-          idTitles,
-          rel.relatedIssue
-        )
-      }
-      addEdge(subgraph, rel.type, node, relatedNode)
-      console.warn(`  ${rel.type} ${relatedDescr}`)
-    }
+    addRelations(subgraph, nodes, labels, idTitles, node, relations, options)
   }
 
   return graph
@@ -309,6 +288,30 @@ function addChildren(subgraph, nodes, labels, idTitles, node, children) {
     }
     addEdge(subgraph, 'has parent', childNode, node)
     console.warn(`  has child ${idTitles[childId]}`)
+  }
+}
+
+function addRelations(subgraph, nodes, labels, idTitles, node, relations, options) {
+  for (const rel of relations) {
+    const relatedId = rel.relatedIssue.identifier
+    const relatedDescr = idTitles[relatedId] || relatedId
+    if (ignoreRelation(rel.type, options)) {
+      console.warn(`  ignoring: ${rel.type} ${relatedDescr}`)
+      continue
+    }
+    let relatedNode = nodes[relatedId]
+    if (!relatedNode) {
+      // Related issue wasn't registered yet; must be outside this project.
+      relatedNode = registerNode(
+        subgraph,
+        nodes,
+        labels,
+        idTitles,
+        rel.relatedIssue
+      )
+    }
+    addEdge(subgraph, rel.type, node, relatedNode)
+    console.warn(`  ${rel.type} ${relatedDescr}`)
   }
 }
 
