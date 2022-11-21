@@ -285,7 +285,7 @@ function addEdge(subgraph, relType, node, relatedNode) {
 
 function isNodeHidden(issue, options): boolean {
   if (
-    issue.state.name === 'Canceled' &&
+    issue.state?.name === 'Canceled' &&
     !(options.canceled || options.cancelled)
   ) {
     return true
@@ -320,7 +320,15 @@ function buildGraph(projectName, issues, options) {
 
     console.warn(idTitles[issue.identifier])
     const node = nodes[issue.identifier]
-    addChildren(subgraph, nodes, labels, idTitles, node, issue.children.nodes)
+    addChildren(
+      subgraph,
+      nodes,
+      labels,
+      idTitles,
+      node,
+      issue.children.nodes,
+      options
+    )
     addRelations(
       subgraph,
       nodes,
@@ -335,8 +343,19 @@ function buildGraph(projectName, issues, options) {
   return graph
 }
 
-function addChildren(subgraph, nodes, labels, idTitles, node, children) {
+function addChildren(
+  subgraph,
+  nodes,
+  labels,
+  idTitles,
+  node,
+  children,
+  options
+) {
   for (const child of children) {
+    if (isNodeHidden(child, options)) {
+      continue
+    }
     const childId = child.identifier
     let childNode = nodes[childId]
     if (!childNode) {
@@ -358,6 +377,9 @@ function addRelations(
   options
 ) {
   for (const rel of relations) {
+    if (isNodeHidden(rel.relatedIssue, options)) {
+      continue
+    }
     const relatedId = rel.relatedIssue.identifier
     const relatedDescr = idTitles[relatedId] || relatedId
     if (ignoreRelation(rel.type, options)) {
