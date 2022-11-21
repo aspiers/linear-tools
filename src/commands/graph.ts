@@ -271,16 +271,7 @@ function buildGraph(projectName, issues, options) {
       continue
     }
 
-    for (const child of children) {
-      const childId = child.identifier
-      let childNode = nodes[childId]
-      if (!childNode) {
-        // Child issue wasn't registered yet; must be outside this project.
-        childNode = registerNode(subgraph, nodes, labels, idTitles, child)
-      }
-      addEdge(subgraph, 'has parent', childNode, node)
-      console.warn(`  has child ${idTitles[childId]}`)
-    }
+    addChildren(subgraph, nodes, labels, idTitles, node, children)
 
     for (const rel of relations) {
       const relatedId = rel.relatedIssue.identifier
@@ -306,6 +297,19 @@ function buildGraph(projectName, issues, options) {
   }
 
   return graph
+}
+
+function addChildren(subgraph, nodes, labels, idTitles, node, children) {
+  for (const child of children) {
+    const childId = child.identifier
+    let childNode = nodes[childId]
+    if (!childNode) {
+      // Child issue wasn't registered yet; must be outside this project.
+      childNode = registerNode(subgraph, nodes, labels, idTitles, child)
+    }
+    addEdge(subgraph, 'has parent', childNode, node)
+    console.warn(`  has child ${idTitles[childId]}`)
+  }
 }
 
 const command: GluegunCommand = {
