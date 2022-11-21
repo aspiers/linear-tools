@@ -157,12 +157,23 @@ async function findRelatedIssues(api, projectId) {
 
 function registerNode(subgraph, nodes, labels, idTitles, issue) {
   const idTitle = `${issue.identifier}: ${issue.title}`
+  idTitles[issue.identifier] = idTitle
+
+  const nodeAttrs = getNodeAttrs(labels, issue)
+  const node = new Node(issue.identifier, nodeAttrs)
+  nodes[issue.identifier] = node
+  subgraph.addNode(node)
+  // console.warn(`+ New graph node for ${issue.identifier}`)
+  return node
+}
+
+function getNodeAttrs(labels, issue): NodeAttributesObject {
   const assignee = issue.assignee?.displayName || '??'
   const title = `${issue.identifier} (${assignee})`
   const label = title + '\n' + wrap(issue.title)
-  idTitles[issue.identifier] = idTitle
   labels[issue.identifier] = label
   const url = `https://linear.app/toucan/issue/${issue.identifier}`
+
   const nodeAttrs: NodeAttributesObject = {
     [_.label]: label,
     [_.URL]: url,
@@ -171,8 +182,10 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
   const priority =
     issue.priority !== undefined ? PRIORITIES[issue.priority][1] : 'unknown'
   const tooltipHeader = `${state}     Priority: ${priority}\n\n`
+
   nodeAttrs[_.tooltip] =
     tooltipHeader + (encode(issue.description) || 'No description.')
+
   if (issue.state) {
     nodeAttrs[_.fillcolor] = issue.state.color
     nodeAttrs[_.style] = 'filled'
@@ -185,15 +198,12 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
   } else {
     nodeAttrs[_.shape] = 'doubleoctagon'
   }
+
   if (issue.priority !== undefined) {
     nodeAttrs[_.penwidth] = 5
     nodeAttrs[_.color] = PRIORITIES[issue.priority][0]
   }
-  const node = new Node(issue.identifier, nodeAttrs)
-  nodes[issue.identifier] = node
-  subgraph.addNode(node)
-  // console.warn(`+ New graph node for ${issue.identifier}`)
-  return node
+  return nodeAttrs
 }
 
 function addEdge(subgraph, relType, node, relatedNode) {
