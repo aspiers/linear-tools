@@ -208,7 +208,8 @@ function createNode(nodes, labels, idTitles, issue) {
 // richer set of data available than the second.  If we created it in
 // the second phase, we'd miss out on some of this extra data.
 function registerNode(subgraph, nodes, labels, idTitles, issue) {
-  const node = nodes[issue.identifier] || createNode(nodes, labels, idTitles, issue)
+  const node =
+    nodes[issue.identifier] || createNode(nodes, labels, idTitles, issue)
   subgraph.addNode(node)
   // console.warn(`+ New graph node for ${issue.identifier}`)
   return node
@@ -295,13 +296,21 @@ function buildGraph(projectName, issues, options) {
   for (const issue of issues) {
     registerNode(subgraph, nodes, labels, idTitles, issue)
   }
-  console.warn(`Registered all issues in project`)
+  console.warn(`Registered issues in project`)
 
   for (const issue of issues) {
     console.warn(idTitles[issue.identifier])
     const node = nodes[issue.identifier]
     addChildren(subgraph, nodes, labels, idTitles, node, issue.children.nodes)
-    addRelations(subgraph, nodes, labels, idTitles, node, issue.relations.nodes, options)
+    addRelations(
+      subgraph,
+      nodes,
+      labels,
+      idTitles,
+      node,
+      issue.relations.nodes,
+      options
+    )
   }
 
   return graph
@@ -320,7 +329,15 @@ function addChildren(subgraph, nodes, labels, idTitles, node, children) {
   }
 }
 
-function addRelations(subgraph, nodes, labels, idTitles, node, relations, options) {
+function addRelations(
+  subgraph,
+  nodes,
+  labels,
+  idTitles,
+  node,
+  relations,
+  options
+) {
   for (const rel of relations) {
     const relatedId = rel.relatedIssue.identifier
     const relatedDescr = idTitles[relatedId] || relatedId
