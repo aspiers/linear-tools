@@ -155,13 +155,24 @@ async function findRelatedIssues(api, projectId) {
   return data.project.issues.nodes
 }
 
-function registerNode(subgraph, nodes, labels, idTitles, issue) {
+function createNode(nodes, labels, idTitles, issue) {
   const idTitle = `${issue.identifier}: ${issue.title}`
   idTitles[issue.identifier] = idTitle
 
   const nodeAttrs = getNodeAttrs(labels, issue)
   const node = new Node(issue.identifier, nodeAttrs)
   nodes[issue.identifier] = node
+  return node
+}
+
+// We decouple the creation of the node from the addition of it to the
+// graph, because it may be created during the first phase of issues
+// returned from queries, but only added to the graph in the second
+// phase due to relationships involving it, and the first phase has a
+// richer set of data available than the second.  If we created it in
+// the second phase, we'd miss out on some of this extra data.
+function registerNode(subgraph, nodes, labels, idTitles, issue) {
+  const node = nodes[issue.identifier] || createNode(nodes, labels, idTitles, issue)
   subgraph.addNode(node)
   // console.warn(`+ New graph node for ${issue.identifier}`)
   return node
