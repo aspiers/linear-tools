@@ -1,7 +1,6 @@
 import { GluegunToolbox, GluegunCommand } from 'gluegun'
 import { LinearClient } from '@linear/sdk'
 import * as Color from 'color'
-import { encode } from 'html-entities'
 
 import {
   attribute as _,
@@ -215,6 +214,15 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
   return node
 }
 
+// For some reason entities like &apos; are not decoded, so roll our
+// own here instead of using the html-entities package.
+function encode(s: string): string {
+  return s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+}
+
 function getNodeAttrs(labels, issue): NodeAttributesObject {
   const assignee = issue.assignee?.displayName || '??'
   const title = `${issue.identifier} (${assignee})`
@@ -232,7 +240,7 @@ function getNodeAttrs(labels, issue): NodeAttributesObject {
   const tooltipHeader = `${state}     Priority: ${priority}\n\n`
 
   nodeAttrs[_.tooltip] =
-    tooltipHeader + (encode(issue.description) || 'No description.')
+    tooltipHeader + encode(issue.description || 'No description.')
 
   if (issue.state) {
     nodeAttrs[_.fillcolor] = issue.state.color
