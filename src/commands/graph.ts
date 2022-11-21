@@ -99,12 +99,45 @@ async function findProjectMatchingSubstring(
 }
 
 async function findRelatedIssues(api, projectId) {
+  const nodes = [] as any[]
+  let after
+  let page = 1
+  let pageInfo
+  do {
+    const afterText = after ? `after ${after}` : 'at start'
+    console.warn(`Doing issue query page ${page} ${afterText} ...`)
+    let newNodes
+    ;[newNodes, pageInfo] = await findRelatedIssuesPaginated(
+      api,
+      projectId,
+      after
+    )
+    if (!newNodes) {
+      break
+    }
+    nodes.push(...newNodes)
+    console.warn(
+      `  Got ${newNodes.length} new node(s); total now ${nodes.length}; hasNextPage=${pageInfo.hasNextPage}`
+    )
+    after = pageInfo?.endCursor
+    page++
+  } while (pageInfo?.hasNextPage)
+
+  return nodes
+}
+
+async function findRelatedIssuesPaginated(
+  api,
+  projectId,
+  after
+): Promise<[any[] | null, any]> {
+  const afterFilter = after ? `, after: "${after}"` : ''
   const { status, data } = await api.rawRequest(
     `
       query Dependencies($projectId: String!) {
         project(id: $projectId) {
           name
-          issues {
+          issues(first: 50${afterFilter}) {
             nodes {
               identifier
               title
@@ -135,6 +168,10 @@ async function findRelatedIssues(api, projectId) {
                 }
               }
             }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
           }
         }
       }
@@ -144,15 +181,15 @@ async function findRelatedIssues(api, projectId) {
 
   if (status !== 200) {
     console.error(data)
-    return null
+    return [null, null]
   }
   if (!data?.project?.issues?.nodes) {
     console.error(`Couldn't find data.project.issues.nodes field in response`)
     console.error(data)
-    return null
+    return [null, null]
   }
 
-  return data.project.issues.nodes
+  return [data.project.issues.nodes, data.project.issues.pageInfo]
 }
 
 function createNode(nodes, labels, idTitles, issue) {
