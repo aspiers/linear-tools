@@ -179,6 +179,9 @@ function registerNode(subgraph, nodes, labels, idTitles, issue) {
     if (Color(issue.state.color).isDark()) {
       nodeAttrs[_.fontcolor] = 'white'
     }
+    if (issue.title.match(/\bepic\b/i)) {
+      nodeAttrs[_.shape] = 'doublecircle'
+    }
   } else {
     nodeAttrs[_.shape] = 'doubleoctagon'
   }

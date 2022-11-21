@@ -53,6 +53,8 @@ list of issues obtained by querying the specified project, and is only
 on the graph because it had some kind of relationship with issues
 obtained from the query.
 
+Issues with `epic` in the title will be given a double circle shape.
+
 # License
 
 MIT - see LICENSE
