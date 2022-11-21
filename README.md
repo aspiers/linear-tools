@@ -30,7 +30,13 @@ Then install the various npm dependencies:
 export LINEAR_API_KEY=...
 
 # Generate the graphviz .dot file
+yarn linear graph "My Linear project" > my-project.dot
+
+# Include duplicates by putting --dupes at the end
 yarn linear graph "My Linear project" --dupes > my-project.dot
+
+# Include cancelled issues by putting --cancelled at the end
+yarn linear graph "My Linear project" --cancelled > my-project.dot
 
 # Generate images
 dot -Tsvg -O my-project.dot

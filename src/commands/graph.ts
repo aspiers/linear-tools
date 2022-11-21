@@ -281,6 +281,16 @@ function addEdge(subgraph, relType, node, relatedNode) {
   subgraph.addEdge(edge)
 }
 
+function isNodeHidden(issue, options): boolean {
+  if (
+    issue.state.name === 'Canceled' &&
+    !(options.canceled || options.cancelled)
+  ) {
+    return true
+  }
+  return false
+}
+
 function buildGraph(projectName, issues, options) {
   const graph = new Digraph(projectName, {
     [_.overlap]: false,
@@ -294,11 +304,18 @@ function buildGraph(projectName, issues, options) {
   const labels = {}
 
   for (const issue of issues) {
+    if (isNodeHidden(issue, options)) {
+      continue
+    }
     registerNode(subgraph, nodes, labels, idTitles, issue)
   }
   console.warn(`Registered issues in project`)
 
   for (const issue of issues) {
+    if (isNodeHidden(issue, options)) {
+      continue
+    }
+
     console.warn(idTitles[issue.identifier])
     const node = nodes[issue.identifier]
     addChildren(subgraph, nodes, labels, idTitles, node, issue.children.nodes)
