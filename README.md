@@ -29,20 +29,20 @@ Then install the various npm dependencies:
 # Get API key from Linear web UI and set it here
 export LINEAR_API_KEY=...
 
-# Generate the graphviz .dot file
+# Generate an SVG graph
+yarn linear graph "My Linear project" --svg my-project.svg
+
+# Generate an PNG graph
+yarn linear graph "My Linear project" --png my-project.png
+
+# Include duplicate issues
+yarn linear graph "My Linear project" --svg my-project.svg --dupes
+
+# Include cancelled issues
+yarn linear graph "My Linear project" --svg my-project.svg --cancelled
+
+# On Linux, you can also view images directly in a Window
 yarn linear graph "My Linear project" > my-project.dot
-
-# Include duplicates by putting --dupes at the end
-yarn linear graph "My Linear project" --dupes > my-project.dot
-
-# Include cancelled issues by putting --cancelled at the end
-yarn linear graph "My Linear project" --cancelled > my-project.dot
-
-# Generate images
-dot -Tsvg -O my-project.dot
-dot -Tpng -O my-project.dot
-
-# View images directly on Linux
 dot -Txlib my-project.dot
 ```
 

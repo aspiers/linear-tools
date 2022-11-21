@@ -1,3 +1,5 @@
+import { spawnSync } from 'child_process'
+
 import { GluegunToolbox, GluegunCommand } from 'gluegun'
 import { LinearClient } from '@linear/sdk'
 import * as Color from 'color'
@@ -388,6 +390,15 @@ function ignoreRelation(relType: string, options): boolean {
   return true
 }
 
+function renderToFile(dot: string, format: 'png' | 'svg', outFile: string) {
+  const result = spawnSync('dot', ['-T', format, '-o', outFile], {
+    input: dot,
+  })
+  if (result.status === 0) {
+    console.log(`Wrote ${outFile}`)
+  }
+}
+
 const command: GluegunCommand = {
   name: 'graph',
   run: async (toolbox: GluegunToolbox) => {
@@ -402,8 +413,17 @@ const command: GluegunCommand = {
     console.warn(`Found project '${project.name}' with id ${project.id}`)
 
     const issues = await findRelatedIssues(api, project.id)
-    const graph = buildGraph(project.name, issues, params.options)
-    console.log(toDot(graph))
+    const options = params.options
+    const graph = buildGraph(project.name, issues, options)
+
+    const dot = toDot(graph)
+    if (options.svg) {
+      renderToFile(dot, 'svg', options.svg)
+    } else if (options.png) {
+      renderToFile(dot, 'png', options.png)
+    } else {
+      console.log(dot)
+    }
   },
 }
 
