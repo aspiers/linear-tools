@@ -235,16 +235,6 @@ function addEdge(subgraph, relType, node, relatedNode) {
   subgraph.addEdge(edge)
 }
 
-function ignoreRelation(relType: string, options): boolean {
-  if (relType === 'duplicate') {
-    return !options.dupes
-  }
-  if (relType === 'blocks') {
-    return false
-  }
-  return true
-}
-
 function buildGraph(projectName, issues, options) {
   const graph = new Digraph(projectName, {
     [_.overlap]: false,
@@ -307,6 +297,16 @@ function addRelations(subgraph, nodes, labels, idTitles, node, relations, option
     addEdge(subgraph, rel.type, node, relatedNode)
     console.warn(`  ${rel.type} ${relatedDescr}`)
   }
+}
+
+function ignoreRelation(relType: string, options): boolean {
+  if (relType === 'duplicate') {
+    return !options.dupes
+  }
+  if (relType === 'blocks') {
+    return false
+  }
+  return true
 }
 
 const command: GluegunCommand = {
