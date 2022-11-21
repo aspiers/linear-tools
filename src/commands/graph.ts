@@ -265,14 +265,8 @@ function buildGraph(projectName, issues, options) {
   for (const issue of issues) {
     console.warn(idTitles[issue.identifier])
     const node = nodes[issue.identifier]
-    const children = issue.children.nodes
-    const relations = issue.relations.nodes
-    if (!children.length && !relations.length) {
-      continue
-    }
-
-    addChildren(subgraph, nodes, labels, idTitles, node, children)
-    addRelations(subgraph, nodes, labels, idTitles, node, relations, options)
+    addChildren(subgraph, nodes, labels, idTitles, node, issue.children.nodes)
+    addRelations(subgraph, nodes, labels, idTitles, node, issue.relations.nodes, options)
   }
 
   return graph
