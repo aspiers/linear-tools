@@ -224,7 +224,7 @@ function ignoreRelation(relType: string, options): boolean {
   return true
 }
 
-function buildGraph(projectName, issues, params) {
+function buildGraph(projectName, issues, options) {
   const graph = new Digraph(projectName, {
     [_.overlap]: false,
     [_.ranksep]: 2,
@@ -264,7 +264,7 @@ function buildGraph(projectName, issues, params) {
     for (const rel of relations) {
       const relatedId = rel.relatedIssue.identifier
       const relatedDescr = idTitles[relatedId] || relatedId
-      if (ignoreRelation(rel.type, params.options)) {
+      if (ignoreRelation(rel.type, options)) {
         console.warn(`  ignoring: ${rel.type} ${relatedDescr}`)
         continue
       }
@@ -301,7 +301,7 @@ const command: GluegunCommand = {
     console.warn(`Found project '${project.name}' with id ${project.id}`)
 
     const issues = await findRelatedIssues(api, project.id)
-    const graph = buildGraph(project.name, issues, params)
+    const graph = buildGraph(project.name, issues, params.options)
     console.log(toDot(graph))
   },
 }
