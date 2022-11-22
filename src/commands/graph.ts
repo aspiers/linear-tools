@@ -299,13 +299,24 @@ function isNodeHidden(issue, options): boolean {
   return false
 }
 
+function ensureSubgraph(graph, subgraphs, name: string): Subgraph {
+  if (subgraphs[name]) {
+    return subgraphs[name]
+  }
+  const subgraphName = 'cluster ' + name
+  const subgraph = new Subgraph(subgraphName)
+  graph.addSubgraph(subgraph)
+  subgraphs[name] = subgraph
+  return subgraph
+}
+
 function buildGraph(projectName, issues, options) {
   const graph = new Digraph(projectName, {
     [_.overlap]: false,
     [_.ranksep]: 2,
   })
-  const subgraph = new Subgraph('Celo')
-  graph.addSubgraph(subgraph)
+  const subgraphs = {}
+  const noCycleSubgraph = ensureSubgraph(graph, subgraphs, 'no cycle')
 
   const nodes = {}
   const idTitles = {}
@@ -315,6 +326,9 @@ function buildGraph(projectName, issues, options) {
     if (isNodeHidden(issue, options)) {
       continue
     }
+    const subgraph = issue.cycle
+      ? ensureSubgraph(graph, subgraphs, issue.cycle.number.toString())
+      : noCycleSubgraph
     registerNode(subgraph, nodes, labels, idTitles, issue)
   }
   console.warn(`Registered issues in project`)
@@ -327,7 +341,7 @@ function buildGraph(projectName, issues, options) {
     console.warn(idTitles[issue.identifier])
     const node = nodes[issue.identifier]
     addChildren(
-      subgraph,
+      noCycleSubgraph,
       nodes,
       labels,
       idTitles,
@@ -336,7 +350,7 @@ function buildGraph(projectName, issues, options) {
       options
     )
     addRelations(
-      subgraph,
+      noCycleSubgraph,
       nodes,
       labels,
       idTitles,
