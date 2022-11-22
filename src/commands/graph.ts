@@ -34,6 +34,7 @@ type Options = {
   canceled?: boolean
   cancelled?: boolean
   dupes?: boolean
+  clusterCycles?: boolean
   svg?: string
   png?: string
 }
@@ -299,7 +300,7 @@ function createNode(
 // richer set of data available than the second.  If we created it in
 // the second phase, we'd miss out on some of this extra data.
 function registerNode(
-  subgraph: Subgraph,
+  graph: Digraph | Subgraph,
   nodes: Nodes,
   labels: Labels,
   idTitles: Titles,
@@ -307,7 +308,7 @@ function registerNode(
 ) {
   const node =
     nodes[issue.identifier] || createNode(nodes, labels, idTitles, issue)
-  subgraph.addNode(node)
+  graph.addNode(node)
   // console.warn(`+ New graph node for ${issue.identifier}`)
   return node
 }
@@ -323,7 +324,9 @@ function encode(s: string): string {
 
 function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
   const assignee = issue.assignee?.displayName || '??'
-  const title = `${issue.identifier} (${assignee})`
+  const cycle = issue.cycle
+  const cycleLabel = cycle?.number || 'none'
+  const title = `${issue.identifier} (${assignee}) [${cycleLabel}]`
   const label = title + '\n' + wrap(issue.title)
   labels[issue.identifier] = label
   const url = `https://linear.app/toucan/issue/${issue.identifier}`
@@ -335,7 +338,6 @@ function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
   const state = issue?.state?.name || 'Unknown state'
   const priority =
     issue.priority !== undefined ? PRIORITIES[issue.priority][1] : 'unknown'
-  const cycle = issue.cycle
   const tooltipHeader = `${state}     Priority: ${priority}    Cycle: ${cycle?.number}\n\n`
 
   nodeAttrs[_.tooltip] =
@@ -362,7 +364,7 @@ function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
 }
 
 function addEdge(
-  subgraph: Subgraph,
+  graph: Digraph | Subgraph,
   relType: string,
   node: Node,
   relatedNode: Node
@@ -381,7 +383,7 @@ function addEdge(
   }
 
   const edge = new Edge(endpoints, attrs)
-  subgraph.addEdge(edge)
+  graph.addEdge(edge)
 }
 
 function isNodeHidden(issue: Issue, options: Options): boolean {
@@ -403,7 +405,15 @@ function ensureSubgraph(
     return subgraphs[name]
   }
   const subgraphName = 'cluster_' + name
-  const subgraph = new Subgraph(subgraphName)
+  const label = name == 'no_cycle' ? 'No cycle' : `Cycle ${name}`
+  const subgraph = new Subgraph(subgraphName, {
+    [_.label]: label,
+    [_.labeljust]: 'l',
+    [_.fontsize]: 20,
+    [_.fontcolor]: 'green',
+    [_.penwidth]: 2,
+    [_.pencolor]: 'green',
+  })
   graph.addSubgraph(subgraph)
   subgraphs[name] = subgraph
   return subgraph
@@ -415,20 +425,26 @@ function buildGraph(projectName: string, issues: Issue[], options: Options) {
     [_.ranksep]: 2,
   })
   const subgraphs = {}
-  const noCycleSubgraph = ensureSubgraph(graph, subgraphs, 'no_cycle')
+  const noCycleSubgraph = options.clusterCycles
+    ? ensureSubgraph(graph, subgraphs, 'no_cycle')
+    : graph
 
+  const issuesById: Issues = {}
   const nodes: Nodes = {}
   const idTitles: Titles = {}
   const labels = {}
 
   for (const issue of issues) {
+    issuesById[issue.identifier] = issue
     if (isNodeHidden(issue, options)) {
       continue
     }
-    const subgraph = issue.cycle
-      ? ensureSubgraph(graph, subgraphs, issue.cycle.number.toString())
-      : noCycleSubgraph
-    registerNode(subgraph, nodes, labels, idTitles, issue)
+    const nodeGraph = options.clusterCycles
+      ? issue.cycle
+        ? ensureSubgraph(graph, subgraphs, issue.cycle.number.toString())
+        : noCycleSubgraph
+      : graph
+    registerNode(nodeGraph, nodes, labels, idTitles, issue)
   }
   console.warn(`Registered issues in project`)
 
@@ -440,21 +456,25 @@ function buildGraph(projectName: string, issues: Issue[], options: Options) {
     console.warn(idTitles[issue.identifier])
     const node = nodes[issue.identifier]
     addChildren(
-      noCycleSubgraph,
+      graph,
+      subgraphs,
+      issuesById,
       nodes,
       labels,
       idTitles,
       node,
-      issue.children.nodes,
+      issue,
       options
     )
     addRelations(
-      noCycleSubgraph,
+      graph,
+      subgraphs,
+      issuesById,
       nodes,
       labels,
       idTitles,
       node,
-      issue.relations.nodes,
+      issue,
       options
     )
   }
@@ -462,15 +482,42 @@ function buildGraph(projectName: string, issues: Issue[], options: Options) {
   return graph
 }
 
-function addChildren(
+function getEdgeGraph(
+  options: Options,
+  graph: Digraph,
   subgraphs: Subgraphs,
+  issues: Issues,
+  issue1: Issue,
+  issue2Id: string
+): Digraph | Subgraph {
+  if (!options.clusterCycles) return graph
+
+  const issue2 = issues[issue2Id]
+  const issue1Cycle = issue1.cycle?.number.toString() || 'no_cycle'
+  const issue2Cycle = issue2?.cycle?.number.toString() || 'no_cycle'
+  if (issue1Cycle === issue2Cycle) {
+    // Issues are in same subgraph
+    return subgraphs[issue1Cycle]
+  }
+  // Edge spans subgraphs
+  return graph
+}
+
+function addChildren(
+  graph: Digraph,
+  subgraphs: Subgraphs,
+  issues: Issues,
   nodes: Nodes,
   labels: Labels,
   idTitles: Titles,
-  children: Node[],
+  node: Node,
   issue: Issue,
   options: Options
 ) {
+  if (!issue.children) {
+    return
+  }
+  const children = issue.children.nodes
   for (const child of children) {
     if (isNodeHidden(child, options)) {
       continue
@@ -479,22 +526,42 @@ function addChildren(
     let childNode = nodes[childId]
     if (!childNode) {
       // Child issue wasn't registered yet; must be outside this project.
-      childNode = registerNode(subgraph, nodes, labels, idTitles, child)
+      childNode = registerNode(
+        options.clusterCycles ? subgraphs['no_cycle'] : graph,
+        nodes,
+        labels,
+        idTitles,
+        child
+      )
     }
-    addEdge(subgraph, 'has parent', childNode, node)
+    const edgeGraph = getEdgeGraph(
+      options,
+      graph,
+      subgraphs,
+      issues,
+      issue,
+      childId
+    )
+    addEdge(edgeGraph, 'has parent', childNode, node)
     console.warn(`  has child ${idTitles[childId]}`)
   }
 }
 
 function addRelations(
+  graph: Digraph,
   subgraphs: Subgraphs,
+  issues: Issues,
   nodes: Nodes,
   labels: Labels,
   idTitles: Titles,
   node: Node,
-  relations: Relation[],
+  issue: Issue,
   options: Options
 ) {
+  if (!issue.relations) {
+    return
+  }
+  const relations = issue.relations.nodes
   for (const rel of relations) {
     if (isNodeHidden(rel.relatedIssue, options)) {
       continue
@@ -509,14 +576,22 @@ function addRelations(
     if (!relatedNode) {
       // Related issue wasn't registered yet; must be outside this project.
       relatedNode = registerNode(
-        subgraph,
+        options.clusterCycles ? subgraphs['no_cycle'] : graph,
         nodes,
         labels,
         idTitles,
         rel.relatedIssue
       )
     }
-    addEdge(subgraph, rel.type, node, relatedNode)
+    const edgeGraph = getEdgeGraph(
+      options,
+      graph,
+      subgraphs,
+      issues,
+      issue,
+      relatedId
+    )
+    addEdge(edgeGraph, rel.type, node, relatedNode)
     console.warn(`  ${rel.type} ${relatedDescr}`)
   }
 }

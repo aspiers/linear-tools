@@ -41,6 +41,9 @@ yarn linear graph "My Linear project" --svg my-project.svg --dupes
 # Include cancelled issues
 yarn linear graph "My Linear project" --svg my-project.svg --cancelled
 
+# Group by cycles
+yarn linear graph "My Linear project" --svg my-project.svg --cluster-cycles
+
 # On Linux, you can also view images directly in a Window
 yarn linear graph "My Linear project" > my-project.dot
 dot -Txlib my-project.dot
