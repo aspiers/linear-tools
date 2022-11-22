@@ -19,6 +19,8 @@ import {
   toDot,
 } from 'ts-graphviz'
 
+const CENSOR_CONTENT = false
+
 // The most 1337 c0d3rZ all copy and paste from stackoverflow
 // https://stackoverflow.com/questions/14484787/wrap-text-in-javascript
 const WRAP_WIDTH = 25
@@ -357,6 +359,10 @@ function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
   const cycle = issue.cycle
   const cycleLabel = cycle?.number || 'none'
   const title = `${issue.identifier} (${assignee}) [${cycleLabel}]`
+  if (CENSOR_CONTENT) {
+    issue.title = 'Issue name hidden due to confidentiality'
+    issue.description = 'Issue description hidden due to confidentiality'
+  }
   const label = title + '\n' + wrap(issue.title)
   labels[issue.identifier] = label
   const url = `https://linear.app/toucan/issue/${issue.identifier}`
