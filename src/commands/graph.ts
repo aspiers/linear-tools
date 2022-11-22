@@ -151,6 +151,11 @@ async function findRelatedIssuesPaginated(
                 color
               }
               priority
+              cycle {
+                id
+                number
+                name
+              }
               children {
                 nodes {
                   identifier
@@ -240,7 +245,8 @@ function getNodeAttrs(labels, issue): NodeAttributesObject {
   const state = issue?.state?.name || 'Unknown state'
   const priority =
     issue.priority !== undefined ? PRIORITIES[issue.priority][1] : 'unknown'
-  const tooltipHeader = `${state}     Priority: ${priority}\n\n`
+  const cycle = issue.cycle
+  const tooltipHeader = `${state}     Priority: ${priority}    Cycle: ${cycle?.number}\n\n`
 
   nodeAttrs[_.tooltip] =
     tooltipHeader + encode(issue.description || 'No description.')
