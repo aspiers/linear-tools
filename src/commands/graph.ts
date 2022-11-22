@@ -31,6 +31,7 @@ const wrap = (s: string) => s.replace(WRAP_REGEXP, '$1\n')
 type Api = LinearGraphQLClient
 
 type Options = {
+  project: string | string[]
   canceled?: boolean
   cancelled?: boolean
   dupes?: boolean
@@ -164,6 +165,35 @@ async function findProjectMatchingSubstring(
 }
 
 async function findRelatedIssues(
+  api: Api,
+  options: Options
+): Promise<Issue[] | null> {
+  const projectSubstrings =
+    typeof options.project === 'string' ? [options.project] : options.project
+  const issues: Issues = {}
+  for await (const projectSubstring of projectSubstrings) {
+    const project = await findProjectMatchingSubstring(api, projectSubstring)
+    if (!project) {
+      console.error(
+        `Couldn't find a unique project matching '${projectSubstring}'`
+      )
+      process.exit(1)
+    }
+    console.warn(`Found project '${project.name}' with id ${project.id}`)
+    const relatedIssues = await findIssuesRelatedToProject(api, project.id)
+    for (const issue of relatedIssues) {
+      // relatedIssues can span projects, so we need to deal with potential
+      // duplicates here.  If we get an issue twice from different projects,
+      // make sure we save the one with the most information.
+      if (!issues[issue.identifier] || issue.children) {
+        issues[issue.identifier] = issue
+      }
+    }
+  }
+  return Object.values(issues)
+}
+
+async function findIssuesRelatedToProject(
   api: Api,
   projectId: string
 ): Promise<Issue[]> {
@@ -419,8 +449,8 @@ function ensureSubgraph(
   return subgraph
 }
 
-function buildGraph(projectName: string, issues: Issue[], options: Options) {
-  const graph = new Digraph(projectName, {
+function buildGraph(issues: Issue[], options: Options) {
+  const graph = new Digraph('Dependency graph', {
     [_.overlap]: false,
     [_.ranksep]: 2,
   })
@@ -446,7 +476,7 @@ function buildGraph(projectName: string, issues: Issue[], options: Options) {
       : graph
     registerNode(nodeGraph, nodes, labels, idTitles, issue)
   }
-  console.warn(`Registered issues in project`)
+  console.warn(`Registered issues`)
 
   for (const issue of issues) {
     if (isNodeHidden(issue, options)) {
@@ -623,14 +653,15 @@ const command: GluegunCommand = {
     })
     const api = linearClient.client
     const params = toolbox.parameters
+    const options = params.options as Options
+    if (!options.project) {
+      console.error('Must specify at least one --project PROJNAME option.')
+      process.exit(1)
+    }
 
-    const project = await findProjectMatchingSubstring(api, params.first)
-    if (!project) return
-    console.warn(`Found project '${project.name}' with id ${project.id}`)
-
-    const issues = await findRelatedIssues(api, project.id)
-    const options = params.options
-    const graph = buildGraph(project.name, issues, options)
+    const issues = await findRelatedIssues(api, options)
+    if (!issues) return
+    const graph = buildGraph(issues, options)
 
     const dot = toDot(graph)
     if (options.svg) {

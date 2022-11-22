@@ -25,29 +25,44 @@ Then install the various npm dependencies:
 
 ## Usage
 
-```shell
-# Get API key from Linear web UI and set it here
-export LINEAR_API_KEY=...
+First you need to get API key from Linear web UI and set it here:
 
-# Generate an SVG graph
-yarn linear graph "My Linear project" --svg my-project.svg
+    export LINEAR_API_KEY=...
 
-# Generate an PNG graph
-yarn linear graph "My Linear project" --png my-project.png
+Then you can simply generate graph in SVG format as follows:
 
-# Include duplicate issues
-yarn linear graph "My Linear project" --svg my-project.svg --dupes
+    yarn linear graph --project "My Linear project" --svg my-project.svg
 
-# Include cancelled issues
-yarn linear graph "My Linear project" --svg my-project.svg --cancelled
+or in PNG format:
 
-# Group by cycles
-yarn linear graph "My Linear project" --svg my-project.svg --cluster-cycles
+    yarn linear graph --project "My Linear project" --png my-project.png
 
-# On Linux, you can also view images directly in a Window
-yarn linear graph "My Linear project" > my-project.dot
-dot -Txlib my-project.dot
-```
+The `--project` value matches by substring, so as long as the substring
+matches a single project, it will work.
+
+Add the `--dupes` option to include duplicate issues in the graph:
+
+    yarn linear graph --project "My Linear project" --svg my-project.svg --dupes
+
+or cancelled issues:
+
+    yarn linear graph --project "My Linear project" --svg my-project.svg --cancelled
+
+You can group issues into clusters according to their cycles:
+
+    yarn linear graph --project "My Linear project" --svg my-project.svg --cluster-cycles
+
+On Linux, you can also view images directly in a Window
+
+    yarn linear graph --project "My Linear project" > my-project.dot
+    dot -Txlib my-project.dot
+
+You can also specify `--project PROJ-SUBSTRING` multiple times to
+include issues from multiple projects in the same graph.  Issues will
+not be shown twice even if they are related to more than one of the
+matching projects.
+
+### Viewing the graphs
 
 It's recommended to view the generated SVG file in your browser.
 That way you can mouse hover over issues to see descriptions,
