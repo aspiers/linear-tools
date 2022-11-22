@@ -1,7 +1,11 @@
 import { spawnSync } from 'child_process'
 
 import { GluegunToolbox, GluegunCommand } from 'gluegun'
-import { LinearClient } from '@linear/sdk'
+import {
+  LinearClient,
+  LinearGraphQLClient,
+  LinearRawResponse,
+} from '@linear/sdk'
 import * as Color from 'color'
 
 import {
@@ -22,7 +26,17 @@ const WRAP_REGEXP = new RegExp(
   `(?![^\n]{1,${WRAP_WIDTH}}$)([^\n]{1,${WRAP_WIDTH}})\\s`,
   'g'
 )
-const wrap = (s) => s.replace(WRAP_REGEXP, '$1\n')
+const wrap = (s: string) => s.replace(WRAP_REGEXP, '$1\n')
+
+type Api = LinearGraphQLClient
+
+type Options = {
+  canceled?: boolean
+  cancelled?: boolean
+  dupes?: boolean
+  svg?: string
+  png?: string
+}
 
 type Project = {
   id: string
@@ -30,6 +44,48 @@ type Project = {
   name: string
   description: string
 }
+
+type PageInfo = {
+  hasNextPage: boolean
+  endCursor: string
+}
+
+type Relation = {
+  type: string
+  relatedIssue: Issue
+}
+
+type Issue = {
+  identifier: string
+  title: string
+  description: string
+  assignee?: {
+    displayName: string
+  }
+  state?: {
+    name: string
+    color: string
+  }
+  priority: number
+  cycle: {
+    id: string
+    number: number
+    name: string
+  }
+  children?: {
+    nodes: Issue[]
+  }
+  relations?: {
+    nodes: Relation[]
+  }
+  pageInfo?: PageInfo
+}
+
+type Subgraphs = Record<string, Subgraph>
+type Issues = Record<string, Issue>
+type Nodes = Record<string, Node>
+type Labels = Record<string, string>
+type Titles = Record<string, string>
 
 const PRIORITIES = {
   0: ['#555555', 'No priority'],
@@ -39,12 +95,19 @@ const PRIORITIES = {
   4: ['blue', 'Low'],
 }
 
+type ProjectsData = {
+  projects?: {
+    nodes?: Project[]
+  }
+}
+
 async function findProjectsMatchingSubstring(
-  api,
-  projectSubstring
+  api: Api,
+  projectSubstring?: string
 ): Promise<Array<Project> | null> {
-  const { status, data } = await api.rawRequest(
-    `
+  const { status, data }: LinearRawResponse<ProjectsData> =
+    await api.rawRequest(
+      `
       query Projects($filter: ProjectFilter) {
         projects(filter: $filter) {
           nodes {
@@ -56,14 +119,14 @@ async function findProjectsMatchingSubstring(
         }
       }
     `,
-    {
-      filter: {
-        name: {
-          contains: projectSubstring,
+      {
+        filter: {
+          name: {
+            contains: projectSubstring,
+          },
         },
-      },
-    }
-  )
+      }
+    )
 
   if (status !== 200) {
     console.error(data)
@@ -80,8 +143,8 @@ async function findProjectsMatchingSubstring(
 }
 
 async function findProjectMatchingSubstring(
-  api,
-  projectSubstring
+  api: Api,
+  projectSubstring?: string
 ): Promise<Project | null> {
   const projects = await findProjectsMatchingSubstring(api, projectSubstring)
   if (!projects) {
@@ -99,15 +162,18 @@ async function findProjectMatchingSubstring(
   return projects[0]
 }
 
-async function findRelatedIssues(api, projectId) {
-  const nodes = [] as any[]
-  let after
+async function findRelatedIssues(
+  api: Api,
+  projectId: string
+): Promise<Issue[]> {
+  const nodes = [] as Issue[]
+  let after: string | null = null
   let page = 1
-  let pageInfo
+  let pageInfo: PageInfo
   do {
     const afterText = after ? `after ${after}` : 'at start'
     console.warn(`Doing issue query page ${page} ${afterText} ...`)
-    let newNodes
+    let newNodes: Issue[] | null
     ;[newNodes, pageInfo] = await findRelatedIssuesPaginated(
       api,
       projectId,
@@ -127,14 +193,27 @@ async function findRelatedIssues(api, projectId) {
   return nodes
 }
 
+type DependenciesData = {
+  project?: {
+    issues?: {
+      nodes?: Issues[]
+      pageInfo?: {
+        hasNextPage: boolean
+        endCursor: string
+      }
+    }
+  }
+}
+
 async function findRelatedIssuesPaginated(
-  api,
-  projectId,
-  after
+  api: Api,
+  projectId: string,
+  after: string | null
 ): Promise<[any[] | null, any]> {
   const afterFilter = after ? `, after: "${after}"` : ''
-  const { status, data } = await api.rawRequest(
-    `
+  const { status, data }: LinearRawResponse<DependenciesData> =
+    await api.rawRequest(
+      `
       query Dependencies($projectId: String!) {
         project(id: $projectId) {
           name
@@ -182,8 +261,8 @@ async function findRelatedIssuesPaginated(
         }
       }
     `,
-    { projectId }
-  )
+      { projectId }
+    )
 
   if (status !== 200) {
     console.error(data)
@@ -198,7 +277,12 @@ async function findRelatedIssuesPaginated(
   return [data.project.issues.nodes, data.project.issues.pageInfo]
 }
 
-function createNode(nodes, labels, idTitles, issue) {
+function createNode(
+  nodes: Nodes,
+  labels: Labels,
+  idTitles: Titles,
+  issue: Issue
+) {
   const idTitle = `${issue.identifier}: ${issue.title}`
   idTitles[issue.identifier] = idTitle
 
@@ -214,7 +298,13 @@ function createNode(nodes, labels, idTitles, issue) {
 // phase due to relationships involving it, and the first phase has a
 // richer set of data available than the second.  If we created it in
 // the second phase, we'd miss out on some of this extra data.
-function registerNode(subgraph, nodes, labels, idTitles, issue) {
+function registerNode(
+  subgraph: Subgraph,
+  nodes: Nodes,
+  labels: Labels,
+  idTitles: Titles,
+  issue: Issue
+) {
   const node =
     nodes[issue.identifier] || createNode(nodes, labels, idTitles, issue)
   subgraph.addNode(node)
@@ -231,7 +321,7 @@ function encode(s: string): string {
     .replaceAll('>', '&gt;')
 }
 
-function getNodeAttrs(labels, issue): NodeAttributesObject {
+function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
   const assignee = issue.assignee?.displayName || '??'
   const title = `${issue.identifier} (${assignee})`
   const label = title + '\n' + wrap(issue.title)
@@ -271,7 +361,12 @@ function getNodeAttrs(labels, issue): NodeAttributesObject {
   return nodeAttrs
 }
 
-function addEdge(subgraph, relType, node, relatedNode) {
+function addEdge(
+  subgraph: Subgraph,
+  relType: string,
+  node: Node,
+  relatedNode: Node
+) {
   let label = relType
   let endpoints: EdgeTargetTuple = [node, relatedNode]
   const attrs = { [_.label]: label }
@@ -289,7 +384,7 @@ function addEdge(subgraph, relType, node, relatedNode) {
   subgraph.addEdge(edge)
 }
 
-function isNodeHidden(issue, options): boolean {
+function isNodeHidden(issue: Issue, options: Options): boolean {
   if (
     issue.state?.name === 'Canceled' &&
     !(options.canceled || options.cancelled)
@@ -299,27 +394,31 @@ function isNodeHidden(issue, options): boolean {
   return false
 }
 
-function ensureSubgraph(graph, subgraphs, name: string): Subgraph {
+function ensureSubgraph(
+  graph: Digraph,
+  subgraphs: Subgraphs,
+  name: string
+): Subgraph {
   if (subgraphs[name]) {
     return subgraphs[name]
   }
-  const subgraphName = 'cluster ' + name
+  const subgraphName = 'cluster_' + name
   const subgraph = new Subgraph(subgraphName)
   graph.addSubgraph(subgraph)
   subgraphs[name] = subgraph
   return subgraph
 }
 
-function buildGraph(projectName, issues, options) {
+function buildGraph(projectName: string, issues: Issue[], options: Options) {
   const graph = new Digraph(projectName, {
     [_.overlap]: false,
     [_.ranksep]: 2,
   })
   const subgraphs = {}
-  const noCycleSubgraph = ensureSubgraph(graph, subgraphs, 'no cycle')
+  const noCycleSubgraph = ensureSubgraph(graph, subgraphs, 'no_cycle')
 
-  const nodes = {}
-  const idTitles = {}
+  const nodes: Nodes = {}
+  const idTitles: Titles = {}
   const labels = {}
 
   for (const issue of issues) {
@@ -364,13 +463,13 @@ function buildGraph(projectName, issues, options) {
 }
 
 function addChildren(
-  subgraph,
-  nodes,
-  labels,
-  idTitles,
-  node,
-  children,
-  options
+  subgraphs: Subgraphs,
+  nodes: Nodes,
+  labels: Labels,
+  idTitles: Titles,
+  children: Node[],
+  issue: Issue,
+  options: Options
 ) {
   for (const child of children) {
     if (isNodeHidden(child, options)) {
@@ -388,13 +487,13 @@ function addChildren(
 }
 
 function addRelations(
-  subgraph,
-  nodes,
-  labels,
-  idTitles,
-  node,
-  relations,
-  options
+  subgraphs: Subgraphs,
+  nodes: Nodes,
+  labels: Labels,
+  idTitles: Titles,
+  node: Node,
+  relations: Relation[],
+  options: Options
 ) {
   for (const rel of relations) {
     if (isNodeHidden(rel.relatedIssue, options)) {
@@ -422,7 +521,7 @@ function addRelations(
   }
 }
 
-function ignoreRelation(relType: string, options): boolean {
+function ignoreRelation(relType: string, options: Options): boolean {
   if (relType === 'duplicate') {
     return !options.dupes
   }
