@@ -69,6 +69,7 @@ type Issue = {
   state?: {
     name: string
     color: string
+    type: string
   }
   priority: number
   cycle: {
@@ -260,6 +261,7 @@ async function findRelatedIssuesPaginated(
               }
               state {
                 name
+                type
                 color
               }
               priority
@@ -424,7 +426,7 @@ function addEdge(
 
 function isNodeHidden(issue: Issue, options: Options): boolean {
   if (
-    issue.state?.name === 'Canceled' &&
+    issue.state?.type === 'canceled' &&
     !(options.canceled || options.cancelled)
   ) {
     return true
