@@ -34,6 +34,7 @@ type Api = LinearGraphQLClient
 
 type Options = {
   project: string | string[]
+  completed?: boolean
   canceled?: boolean
   cancelled?: boolean
   dupes?: boolean
@@ -429,6 +430,9 @@ function isNodeHidden(issue: Issue, options: Options): boolean {
     issue.state?.type === 'canceled' &&
     !(options.canceled || options.cancelled)
   ) {
+    return true
+  }
+  if (issue.state?.type === 'completed' && !options.completed) {
     return true
   }
   return false

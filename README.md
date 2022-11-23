@@ -44,8 +44,9 @@ Add the `--dupes` option to include duplicate issues in the graph:
 
     yarn linear graph --project "My Linear project" --svg my-project.svg --dupes
 
-or cancelled issues:
+and/or completed / cancelled issues (you can combine options):
 
+    yarn linear graph --project "My Linear project" --svg my-project.svg --completed
     yarn linear graph --project "My Linear project" --svg my-project.svg --cancelled
 
 You can group issues into clusters according to their cycles:
