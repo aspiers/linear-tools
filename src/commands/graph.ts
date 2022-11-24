@@ -73,6 +73,7 @@ type Issue = {
     type: string
   }
   priority: number
+  estimate: number
   cycle: {
     id: string
     number: number
@@ -92,6 +93,15 @@ type Issues = Record<string, Issue>
 type Nodes = Record<string, Node>
 type Labels = Record<string, string>
 type Titles = Record<string, string>
+
+const SIZES = {
+  0: [0.25, 10.0],
+  1: [0.5, 12.0],
+  2: [0.75, 14.0],
+  3: [1.0, 18.0],
+  5: [1.25, 22.0],
+  8: [1.5, 26.0],
+}
 
 const PRIORITIES = {
   0: ['#555555', 'No priority'],
@@ -266,6 +276,7 @@ async function findRelatedIssuesPaginated(
                 color
               }
               priority
+              estimate
               cycle {
                 id
                 number
@@ -276,6 +287,7 @@ async function findRelatedIssuesPaginated(
                   identifier
                   title
                   description
+                  estimate
                 }
               }
               relations {
@@ -357,15 +369,19 @@ function encode(s: string): string {
     .replaceAll('>', '&gt;')
 }
 
-function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
+function getIssueInfo(issue: Issue): string {
   const assignee = issue.assignee?.displayName || '??'
-  const cycle = issue.cycle
-  const cycleLabel = cycle?.number || 'none'
-  const title = `${issue.identifier} (${assignee}) [${cycleLabel}]`
+  const cycleLabel = issue.cycle?.number || '-'
+  return `[${assignee} / C${cycleLabel} / E${issue.estimate || '?'}]`
+}
+
+function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
   if (CENSOR_CONTENT) {
     issue.title = 'Issue name hidden due to confidentiality'
     issue.description = 'Issue description hidden due to confidentiality'
   }
+  const info = getIssueInfo(issue)
+  const title = issue.identifier + ' ' + info
   const label = title + '\n' + wrap(issue.title)
   labels[issue.identifier] = label
   const url = `https://linear.app/toucan/issue/${issue.identifier}`
@@ -377,19 +393,30 @@ function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
   const state = issue?.state?.name || 'Unknown state'
   const priority =
     issue.priority !== undefined ? PRIORITIES[issue.priority][1] : 'unknown'
-  const tooltipHeader = `${state}     Priority: ${priority}    Cycle: ${cycle?.number}\n\n`
+  const cycleLabel = issue.cycle?.number || '-'
+  const tooltipHeader = `${state}  Priority: ${priority}  Cycle: ${cycleLabel}  Estimate: ${issue.estimate}\n\n`
 
   nodeAttrs[_.tooltip] =
     tooltipHeader + encode(issue.description || 'No description.')
 
   if (issue.state) {
+    let estimate = issue.estimate
+    if (issue.title.includes('EPIC')) {
+      estimate = 5
+    }
+    const sizes = SIZES[estimate]
+    if (sizes) {
+      const [width, fontsize] = sizes
+      nodeAttrs[_.width] = width
+      nodeAttrs[_.fontsize] = fontsize
+    }
     nodeAttrs[_.fillcolor] = issue.state.color
     nodeAttrs[_.style] = 'filled'
     if (Color(issue.state.color).isDark()) {
       nodeAttrs[_.fontcolor] = 'white'
     }
     if (issue.title.match(/\bepic\b/i)) {
-      nodeAttrs[_.shape] = 'doublecircle'
+      nodeAttrs[_.shape] = 'hexagon'
     }
   } else {
     nodeAttrs[_.shape] = 'doubleoctagon'
@@ -495,7 +522,7 @@ function buildGraph(issues: Issue[], options: Options) {
       continue
     }
 
-    console.warn(idTitles[issue.identifier])
+    console.warn(idTitles[issue.identifier] + ' ' + getIssueInfo(issue))
     const node = nodes[issue.identifier]
     addChildren(
       graph,
