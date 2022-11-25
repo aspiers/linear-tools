@@ -1,9 +1,11 @@
 import { build } from 'gluegun'
+import * as dotenv from 'dotenv'
 
 /**
  * Create the cli and kick it off
  */
 async function run(argv) {
+  dotenv.config()
   // create a CLI runtime
   const cli = build()
     .brand('linear')
