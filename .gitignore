@@ -16,3 +16,6 @@ build
 .vscode
 output/
 .env
+*.svg
+*.png
+*.dot
