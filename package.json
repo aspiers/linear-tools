@@ -29,6 +29,7 @@
   "dependencies": {
     "@linear/sdk": "^1.22.0",
     "color": "^4.2.3",
+    "dotenv": "^16.0.3",
     "gluegun": "latest",
     "ts-graphviz": "^1.2.3"
   },
