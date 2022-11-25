@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process'
+import * as fs from 'fs';
 
 import { GluegunToolbox, GluegunCommand } from 'gluegun'
 import {
@@ -681,6 +682,10 @@ function renderToFile(dot: string, format: 'png' | 'svg', outFile: string) {
   })
   if (result.status === 0) {
     console.log(`Wrote ${outFile}`)
+  } else {
+    const dotFileToDebug = `debug-${outFile}.dot`
+    fs.writeFileSync(dotFileToDebug, dot)
+    console.log(`Failed to parse DOT! Wrote erroneous DOT in ${dotFileToDebug} to debug`)
   }
 }
 
