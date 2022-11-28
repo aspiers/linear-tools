@@ -19,7 +19,18 @@ it should be simple using [Homebrew](https://brew.sh/):
 
     brew install graphviz
 
-Then install the various npm dependencies:
+You will also need [Node.js](https://nodejs.org/en/), at least version
+15.14.0 (for `String.prototype.replaceAll`).  This can be satisfied
+via Homebrew, e.g.
+
+    brew install node@16
+
+or by first [installing `nvm`](https://nvm.sh) and then installing
+Node.js v16 or later:
+
+    nvm use 16
+
+Finally, install the various npm dependencies:
 
     yarn install
 
