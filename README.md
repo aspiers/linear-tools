@@ -60,6 +60,9 @@ and/or completed / cancelled issues (you can combine options):
     yarn linear graph --project "My Linear project" --svg my-project.svg --completed
     yarn linear graph --project "My Linear project" --svg my-project.svg --cancelled
 
+Use `--hide-external` to exclude dependencies on issues outside the
+selected projects.
+
 You can group issues into clusters according to their cycles:
 
     yarn linear graph --project "My Linear project" --svg my-project.svg --cluster-cycles

@@ -40,6 +40,7 @@ type Options = {
   cancelled?: boolean
   dupes?: boolean
   clusterCycles?: boolean
+  hideExternal?: boolean
   svg?: string
   png?: string
 }
@@ -643,26 +644,35 @@ function addRelations(
       continue
     }
     let relatedNode = nodes[relatedId]
+    let external = false
     if (!relatedNode) {
       // Related issue wasn't registered yet; must be outside this project.
-      relatedNode = registerNode(
-        options.clusterCycles ? subgraphs['no_cycle'] : graph,
-        nodes,
-        labels,
-        idTitles,
-        rel.relatedIssue
-      )
+      external = true
+      if (!options.hideExternal) {
+        relatedNode = registerNode(
+          options.clusterCycles ? subgraphs['no_cycle'] : graph,
+          nodes,
+          labels,
+          idTitles,
+          rel.relatedIssue
+        )
+      }
     }
-    const edgeGraph = getEdgeGraph(
-      options,
-      graph,
-      subgraphs,
-      issues,
-      issue,
-      relatedId
-    )
-    addEdge(edgeGraph, rel.type, node, relatedNode)
-    console.warn(`  ${rel.type} ${relatedDescr}`)
+    if (!external || !options.hideExternal) {
+      const edgeGraph = getEdgeGraph(
+        options,
+        graph,
+        subgraphs,
+        issues,
+        issue,
+        relatedId
+      )
+      addEdge(edgeGraph, rel.type, node, relatedNode)
+      console.warn(`  ${rel.type} ${relatedDescr}`)
+    }
+    if (external) {
+      console.warn(`  ${rel.type} ${relatedDescr} (hiding external issue)`)
+    }
   }
 }
 
