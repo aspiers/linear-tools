@@ -722,9 +722,11 @@ const command: GluegunCommand = {
     const dot = toDot(graph)
     if (options.svg) {
       renderToFile(dot, 'svg', options.svg)
-    } else if (options.png) {
+    }
+    if (options.png) {
       renderToFile(dot, 'png', options.png)
-    } else {
+    }
+    if (!(options.svg || options.png)) {
       console.log(dot)
     }
   },
