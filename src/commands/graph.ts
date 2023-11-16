@@ -20,6 +20,8 @@ import {
   toDot,
 } from 'ts-graphviz'
 
+import {die} from '../utils'
+
 const CENSOR_CONTENT = false
 
 // The most 1337 c0d3rZ all copy and paste from stackoverflow
@@ -687,16 +689,23 @@ function ignoreRelation(relType: string, options: Options): boolean {
 }
 
 function renderToFile(dot: string, format: 'png' | 'svg', outFile: string) {
+  // console.debug(`dot -T ${format} -o ${outFile}`)
   const result = spawnSync('dot', ['-T', format, '-o', outFile], {
     input: dot,
   })
+  if (!outFile.endsWith(format)) {
+    die(`Output file ${outFile} extension doesn't match format ${format}`);
+  }
   if (result.status === 0) {
     console.log(`Wrote ${outFile}`)
   } else {
-    const dotFileToDebug = `debug-${outFile}.dot`
+    const dotFileToDebug = outFile.replace(new RegExp(`\\.${format}$`), '-debug.dot')
+    if (outFile === dotFileToDebug) {
+      die(`Failed to generate debug filename for ${outFile}`);
+    }
     fs.writeFileSync(dotFileToDebug, dot)
-    console.log(
-      `Failed to parse DOT! Wrote erroneous DOT in ${dotFileToDebug} to debug`
+    die(
+      `Failed to convert DOT file to image! Wrote DOT in ${dotFileToDebug} to debug`
     )
   }
 }
