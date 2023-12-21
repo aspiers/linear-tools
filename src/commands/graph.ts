@@ -68,6 +68,7 @@ type Issue = {
   identifier: string
   title: string
   description: string
+  projectId: string
   assignee?: {
     displayName: string
   }
@@ -97,6 +98,7 @@ type Issues = Record<string, Issue>
 type Nodes = Record<string, Node>
 type Labels = Record<string, string>
 type Titles = Record<string, string>
+type Projects = Record<string, string>
 
 const SIZES = {
   0: [0.25, 10.0],
@@ -185,10 +187,12 @@ async function findProjectMatchingSubstring(
 async function findRelatedIssues(
   api: Api,
   options: Options
-): Promise<Issue[] | null> {
+): Promise<[Issue[], Projects]> {
   const projectSubstrings =
     typeof options.project === 'string' ? [options.project] : options.project
   const issues: Issues = {}
+  const projects: Projects = {}
+
   for await (const projectSubstring of projectSubstrings) {
     const project = await findProjectMatchingSubstring(api, projectSubstring)
     if (!project) {
@@ -198,6 +202,7 @@ async function findRelatedIssues(
       process.exit(1)
     }
     console.warn(`Found project '${project.name}' with id ${project.id}`)
+    projects[project.id] = project.name
     const relatedIssues = await findIssuesRelatedToProject(api, project.id)
     for (const issue of relatedIssues) {
       // relatedIssues can span projects, so we need to deal with potential
@@ -208,7 +213,7 @@ async function findRelatedIssues(
       }
     }
   }
-  return Object.values(issues)
+  return [Object.values(issues), projects]
 }
 
 async function findIssuesRelatedToProject(
@@ -230,6 +235,9 @@ async function findIssuesRelatedToProject(
     )
     if (!newNodes) {
       break
+    }
+    for (const node of newNodes) {
+      node.projectId = projectId
     }
     nodes.push(...newNodes)
     console.warn(
@@ -333,12 +341,13 @@ function createNode(
   nodes: Nodes,
   labels: Labels,
   idTitles: Titles,
+  projects: Projects,
   issue: Issue
 ) {
   const idTitle = `${issue.identifier}: ${issue.title}`
   idTitles[issue.identifier] = idTitle
 
-  const nodeAttrs = getNodeAttrs(labels, issue)
+  const nodeAttrs = getNodeAttrs(labels, projects, issue)
   const node = new Node(issue.identifier, nodeAttrs)
   nodes[issue.identifier] = node
   return node
@@ -355,10 +364,11 @@ function registerNode(
   nodes: Nodes,
   labels: Labels,
   idTitles: Titles,
+  projects: Projects,
   issue: Issue
 ) {
   const node =
-    nodes[issue.identifier] || createNode(nodes, labels, idTitles, issue)
+    nodes[issue.identifier] || createNode(nodes, labels, idTitles, projects, issue)
   graph.addNode(node)
   // console.warn(`+ New graph node for ${issue.identifier}`)
   return node
@@ -379,7 +389,7 @@ function getIssueInfo(issue: Issue): string {
   return `[${assignee} / C${cycleLabel} / E${issue.estimate || '?'}]`
 }
 
-function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
+function getNodeAttrs(labels: Labels, projects: Projects, issue: Issue): NodeAttributesObject {
   if (CENSOR_CONTENT) {
     issue.title = 'Issue name hidden due to confidentiality'
     issue.description = 'Issue description hidden due to confidentiality'
@@ -398,7 +408,8 @@ function getNodeAttrs(labels: Labels, issue: Issue): NodeAttributesObject {
   const priority =
     issue.priority !== undefined ? PRIORITIES[issue.priority][1] : 'unknown'
   const cycleLabel = issue.cycle?.number || '-'
-  const tooltipHeader = `${state}  Priority: ${priority}  Cycle: ${cycleLabel}  Estimate: ${issue.estimate}\n\n`
+  const project = projects[issue.projectId] || issue.projectId
+  const tooltipHeader = `${state}  Priority: ${priority}  Cycle: ${cycleLabel}  Estimate: ${issue.estimate}\nProject: ${project}\n\n`
 
   nodeAttrs[_.tooltip] =
     tooltipHeader + encode(issue.description || 'No description.')
@@ -492,7 +503,7 @@ function ensureSubgraph(
   return subgraph
 }
 
-function buildGraph(issues: Issue[], options: Options) {
+function buildGraph(issues: Issue[], projects: Projects, options: Options) {
   const graph = new Digraph('Dependency graph', {
     [_.overlap]: false,
     [_.ranksep]: 2,
@@ -517,7 +528,7 @@ function buildGraph(issues: Issue[], options: Options) {
         ? ensureSubgraph(graph, subgraphs, issue.cycle.number.toString())
         : noCycleSubgraph
       : graph
-    registerNode(nodeGraph, nodes, labels, idTitles, issue)
+    registerNode(nodeGraph, nodes, labels, idTitles, projects, issue)
   }
   console.warn(`Registered issues`)
 
@@ -535,6 +546,7 @@ function buildGraph(issues: Issue[], options: Options) {
       nodes,
       labels,
       idTitles,
+      projects,
       node,
       issue,
       options
@@ -546,6 +558,7 @@ function buildGraph(issues: Issue[], options: Options) {
       nodes,
       labels,
       idTitles,
+      projects,
       node,
       issue,
       options
@@ -583,6 +596,7 @@ function addChildren(
   nodes: Nodes,
   labels: Labels,
   idTitles: Titles,
+  projects: Projects,
   node: Node,
   issue: Issue,
   options: Options
@@ -604,6 +618,7 @@ function addChildren(
         nodes,
         labels,
         idTitles,
+        projects,
         child
       )
     }
@@ -627,6 +642,7 @@ function addRelations(
   nodes: Nodes,
   labels: Labels,
   idTitles: Titles,
+  projects: Projects,
   node: Node,
   issue: Issue,
   options: Options
@@ -656,6 +672,7 @@ function addRelations(
           nodes,
           labels,
           idTitles,
+          projects,
           rel.relatedIssue
         )
       }
@@ -724,9 +741,9 @@ const command: GluegunCommand = {
       process.exit(1)
     }
 
-    const issues = await findRelatedIssues(api, options)
+    const [issues, projects] = await findRelatedIssues(api, options)
     if (!issues) return
-    const graph = buildGraph(issues, options)
+    const graph = buildGraph(issues, projects, options)
 
     const dot = toDot(graph)
     if (options.svg) {
