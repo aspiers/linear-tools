@@ -1,0 +1,11 @@
+build/
+node_modules
+.gitignore
+.github
+.eslintignore
+.husky
+.nvmrc
+.prettierignore
+.yarn
+LICENSE
+pnpm-lock.yaml
