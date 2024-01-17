@@ -1,7 +1,6 @@
 import { spawnSync } from 'child_process'
 import * as fs from 'fs'
 
-import { GluegunToolbox, GluegunCommand } from 'gluegun'
 import {
   LinearClient,
   LinearGraphQLClient,
@@ -20,6 +19,7 @@ import {
   toDot,
 } from 'ts-graphviz'
 
+import { GraphOptions } from '../types/cli'
 import { die } from '../utils'
 
 const CENSOR_CONTENT = false
@@ -34,18 +34,6 @@ const WRAP_REGEXP = new RegExp(
 const wrap = (s: string) => s.replace(WRAP_REGEXP, '$1\n')
 
 type Api = LinearGraphQLClient
-
-type Options = {
-  project: string | string[]
-  completed?: boolean
-  canceled?: boolean
-  cancelled?: boolean
-  dupes?: boolean
-  clusterCycles?: boolean
-  hideExternal?: boolean
-  svg?: string
-  png?: string
-}
 
 type Project = {
   id: string
@@ -186,14 +174,15 @@ async function findProjectMatchingSubstring(
 
 async function findRelatedIssues(
   api: Api,
-  options: Options,
+  options: GraphOptions,
 ): Promise<[Issue[], Projects]> {
-  const projectSubstrings =
-    typeof options.project === 'string' ? [options.project] : options.project
   const issues: Issues = {}
   const projects: Projects = {}
 
-  for await (const projectSubstring of projectSubstrings) {
+  if (!options.project) {
+    process.exit(1)
+  }
+  for await (const projectSubstring of options.project) {
     const project = await findProjectMatchingSubstring(api, projectSubstring)
     if (!project) {
       console.error(
@@ -472,11 +461,8 @@ function addEdge(
   graph.addEdge(edge)
 }
 
-function isNodeHidden(issue: Issue, options: Options): boolean {
-  if (
-    issue.state?.type === 'canceled' &&
-    !(options.canceled || options.cancelled)
-  ) {
+function isNodeHidden(issue: Issue, options: GraphOptions): boolean {
+  if (issue.state?.type === 'canceled' && !options.cancelled) {
     return true
   }
   if (issue.state?.type === 'completed' && !options.completed) {
@@ -508,7 +494,11 @@ function ensureSubgraph(
   return subgraph
 }
 
-function buildGraph(issues: Issue[], projects: Projects, options: Options) {
+function buildGraph(
+  issues: Issue[],
+  projects: Projects,
+  options: GraphOptions,
+) {
   const graph = new Digraph('Dependency graph', {
     [_.overlap]: false,
     [_.ranksep]: 2,
@@ -574,7 +564,7 @@ function buildGraph(issues: Issue[], projects: Projects, options: Options) {
 }
 
 function getEdgeGraph(
-  options: Options,
+  options: GraphOptions,
   graph: Digraph,
   subgraphs: Subgraphs,
   issues: Issues,
@@ -604,7 +594,7 @@ function addChildren(
   projects: Projects,
   node: Node,
   issue: Issue,
-  options: Options,
+  options: GraphOptions,
 ) {
   if (!issue.children) {
     return
@@ -650,7 +640,7 @@ function addRelations(
   projects: Projects,
   node: Node,
   issue: Issue,
-  options: Options,
+  options: GraphOptions,
 ) {
   if (!issue.relations) {
     return
@@ -700,9 +690,9 @@ function addRelations(
   }
 }
 
-function ignoreRelation(relType: string, options: Options): boolean {
+function ignoreRelation(relType: string, options: GraphOptions): boolean {
   if (relType === 'duplicate') {
-    return !options.dupes
+    return !options.duplicates
   }
   if (relType === 'blocks') {
     return false
@@ -735,35 +725,24 @@ function renderToFile(dot: string, format: 'png' | 'svg', outFile: string) {
   }
 }
 
-const command: GluegunCommand = {
-  name: 'graph',
-  run: async (toolbox: GluegunToolbox) => {
-    const linearClient = new LinearClient({
-      apiKey: process.env.LINEAR_API_KEY,
-    })
-    const api = linearClient.client
-    const params = toolbox.parameters
-    const options = params.options as Options
-    if (!options.project) {
-      console.error('Must specify at least one --project PROJNAME option.')
-      process.exit(1)
-    }
+export default async function graph(options: GraphOptions) {
+  const linearClient = new LinearClient({
+    apiKey: process.env.LINEAR_API_KEY,
+  })
+  const api = linearClient.client
 
-    const [issues, projects] = await findRelatedIssues(api, options)
-    if (!issues) return
-    const graph = buildGraph(issues, projects, options)
+  const [issues, projects] = await findRelatedIssues(api, options)
+  if (!issues) return
+  const graph = buildGraph(issues, projects, options)
 
-    const dot = toDot(graph)
-    if (options.svg) {
-      renderToFile(dot, 'svg', options.svg)
-    }
-    if (options.png) {
-      renderToFile(dot, 'png', options.png)
-    }
-    if (!(options.svg || options.png)) {
-      console.log(dot)
-    }
-  },
+  const dot = toDot(graph)
+  if (options.svg) {
+    renderToFile(dot, 'svg', options.svg)
+  }
+  if (options.png) {
+    renderToFile(dot, 'png', options.png)
+  }
+  if (!(options.svg || options.png)) {
+    console.log(dot)
+  }
 }
-
-module.exports = command

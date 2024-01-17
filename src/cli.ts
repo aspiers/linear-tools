@@ -1,27 +1,37 @@
-import { build } from 'gluegun'
 import * as dotenv from 'dotenv'
+import { Command } from '@commander-js/extra-typings'
 
-/**
- * Create the cli and kick it off
- */
-async function run(argv) {
+import graph from './commands/graph'
+import { GraphOptions } from './types/cli'
+
+export function run() {
   dotenv.config()
-  // create a CLI runtime
-  const cli = build()
-    .brand('linear')
-    .src(__dirname)
-    .plugins('./node_modules', { matching: 'linear-*', hidden: true })
-    .help() // provides default for help, h, --help, -h
-    .version() // provides default for version, v, --version, -v
-    .create()
-  // enable the following method if you'd like to skip loading one of these core extensions
-  // this can improve performance if they're not necessary for your project:
-  // .exclude(['meta', 'strings', 'print', 'filesystem', 'semver', 'system', 'prompt', 'http', 'template', 'patching', 'package-manager'])
-  // and run it
-  const toolbox = await cli.run(argv)
 
-  // send it back (for testing, mostly)
-  return toolbox
+  const program = new Command()
+    .name('linear')
+    .description('CLI for analysing issues from linear.app')
+    .version('0.1.0')
+
+  program
+    .command('graph')
+    .description('Generate a dependency graph')
+    .option(
+      '--cycles, --cluster-cycles',
+      'Cluster issues by Linear cycle into subgraphs',
+    )
+    .option('--completed', 'Include completed issues')
+    .option('--cancelled', 'Include cancelled issues')
+    .option('--dupes, --duplicates', 'Include duplicate issues')
+    .option(
+      '--noext, --hide-external',
+      'Hide issues external to the specified project(s), even if there are dependencies on them',
+    )
+    .requiredOption('--project <projects...>', 'Scope to the given project(s)')
+    .option('--svg <file>', 'Output a SVG image to the file specified')
+    .option('--png <file>', 'Output a PNG image to the file specified')
+    .action(async (options: GraphOptions) => {
+      await graph(options)
+    })
+
+  program.parse()
 }
-
-module.exports = { run }

@@ -27,10 +27,11 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@commander-js/extra-typings": "^11.1.0",
     "@linear/sdk": "^13.0.0",
     "color": "^4.2.3",
+    "commander": "^11.1.0",
     "dotenv": "^16.0.3",
-    "gluegun": "^5.1.6",
     "ts-graphviz": "^1.2.3"
   },
   "devDependencies": {
@@ -38,6 +39,7 @@
     "@types/dotenv": "^8.2.0",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.11.5",
+    "@types/yargs": "^17.0.32",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "copyfiles": "^2.4.1",
