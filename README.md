@@ -7,8 +7,8 @@ Currently it only plots issue dependency graphs within a given project.
 
 **WARNING:** this is currently a very quick and dirty hack; please
 consider it an alpha release.  No tests have been written, and it's
-liable to break at any moment.  Nevertheless it's only *reading* data
-from the Linear API, not writing anything, so at least in *theory*
+liable to break at any moment.  Nevertheless it's only _reading_ data
+from the Linear API, not writing anything, so at least in _theory_
 there should be no risk at all in trying it ... but equally no
 guarantee is offered.  Caveat emptor.
 

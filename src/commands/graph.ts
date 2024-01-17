@@ -20,7 +20,7 @@ import {
   toDot,
 } from 'ts-graphviz'
 
-import {die} from '../utils'
+import { die } from '../utils'
 
 const CENSOR_CONTENT = false
 
@@ -29,7 +29,7 @@ const CENSOR_CONTENT = false
 const WRAP_WIDTH = 25
 const WRAP_REGEXP = new RegExp(
   `(?![^\n]{1,${WRAP_WIDTH}}$)([^\n]{1,${WRAP_WIDTH}})\\s`,
-  'g'
+  'g',
 )
 const wrap = (s: string) => s.replace(WRAP_REGEXP, '$1\n')
 
@@ -125,7 +125,7 @@ type ProjectsData = {
 
 async function findProjectsMatchingSubstring(
   api: Api,
-  projectSubstring?: string
+  projectSubstring?: string,
 ): Promise<Array<Project> | null> {
   const { status, data }: LinearRawResponse<ProjectsData> =
     await api.rawRequest(
@@ -147,7 +147,7 @@ async function findProjectsMatchingSubstring(
             contains: projectSubstring,
           },
         },
-      }
+      },
     )
 
   if (status !== 200) {
@@ -166,7 +166,7 @@ async function findProjectsMatchingSubstring(
 
 async function findProjectMatchingSubstring(
   api: Api,
-  projectSubstring?: string
+  projectSubstring?: string,
 ): Promise<Project | null> {
   const projects = await findProjectsMatchingSubstring(api, projectSubstring)
   if (!projects) {
@@ -186,7 +186,7 @@ async function findProjectMatchingSubstring(
 
 async function findRelatedIssues(
   api: Api,
-  options: Options
+  options: Options,
 ): Promise<[Issue[], Projects]> {
   const projectSubstrings =
     typeof options.project === 'string' ? [options.project] : options.project
@@ -197,7 +197,7 @@ async function findRelatedIssues(
     const project = await findProjectMatchingSubstring(api, projectSubstring)
     if (!project) {
       console.error(
-        `Couldn't find a unique project matching '${projectSubstring}'`
+        `Couldn't find a unique project matching '${projectSubstring}'`,
       )
       process.exit(1)
     }
@@ -218,7 +218,7 @@ async function findRelatedIssues(
 
 async function findIssuesRelatedToProject(
   api: Api,
-  projectId: string
+  projectId: string,
 ): Promise<Issue[]> {
   const nodes = [] as Issue[]
   let after: string | null = null
@@ -231,7 +231,7 @@ async function findIssuesRelatedToProject(
     ;[newNodes, pageInfo] = await findRelatedIssuesPaginated(
       api,
       projectId,
-      after
+      after,
     )
     if (!newNodes) {
       break
@@ -241,7 +241,7 @@ async function findIssuesRelatedToProject(
     }
     nodes.push(...newNodes)
     console.warn(
-      `  Got ${newNodes.length} new node(s); total now ${nodes.length}; hasNextPage=${pageInfo.hasNextPage}`
+      `  Got ${newNodes.length} new node(s); total now ${nodes.length}; hasNextPage=${pageInfo.hasNextPage}`,
     )
     after = pageInfo?.endCursor
     page++
@@ -265,7 +265,7 @@ type DependenciesData = {
 async function findRelatedIssuesPaginated(
   api: Api,
   projectId: string,
-  after: string | null
+  after: string | null,
 ): Promise<[any[] | null, any]> {
   const afterFilter = after ? `, after: "${after}"` : ''
   const { status, data }: LinearRawResponse<DependenciesData> =
@@ -321,7 +321,7 @@ async function findRelatedIssuesPaginated(
         }
       }
     `,
-      { projectId }
+      { projectId },
     )
 
   if (status !== 200) {
@@ -342,7 +342,7 @@ function createNode(
   labels: Labels,
   idTitles: Titles,
   projects: Projects,
-  issue: Issue
+  issue: Issue,
 ) {
   const idTitle = `${issue.identifier}: ${issue.title}`
   idTitles[issue.identifier] = idTitle
@@ -365,10 +365,11 @@ function registerNode(
   labels: Labels,
   idTitles: Titles,
   projects: Projects,
-  issue: Issue
+  issue: Issue,
 ) {
   const node =
-    nodes[issue.identifier] || createNode(nodes, labels, idTitles, projects, issue)
+    nodes[issue.identifier] ||
+    createNode(nodes, labels, idTitles, projects, issue)
   graph.addNode(node)
   // console.warn(`+ New graph node for ${issue.identifier}`)
   return node
@@ -389,7 +390,11 @@ function getIssueInfo(issue: Issue): string {
   return `[${assignee} / C${cycleLabel} / E${issue.estimate || '?'}]`
 }
 
-function getNodeAttrs(labels: Labels, projects: Projects, issue: Issue): NodeAttributesObject {
+function getNodeAttrs(
+  labels: Labels,
+  projects: Projects,
+  issue: Issue,
+): NodeAttributesObject {
   if (CENSOR_CONTENT) {
     issue.title = 'Issue name hidden due to confidentiality'
     issue.description = 'Issue description hidden due to confidentiality'
@@ -448,7 +453,7 @@ function addEdge(
   graph: Digraph | Subgraph,
   relType: string,
   node: Node,
-  relatedNode: Node
+  relatedNode: Node,
 ) {
   let label = relType
   let endpoints: EdgeTargetTuple = [node, relatedNode]
@@ -483,7 +488,7 @@ function isNodeHidden(issue: Issue, options: Options): boolean {
 function ensureSubgraph(
   graph: Digraph,
   subgraphs: Subgraphs,
-  name: string
+  name: string,
 ): Subgraph {
   if (subgraphs[name]) {
     return subgraphs[name]
@@ -549,7 +554,7 @@ function buildGraph(issues: Issue[], projects: Projects, options: Options) {
       projects,
       node,
       issue,
-      options
+      options,
     )
     addRelations(
       graph,
@@ -561,7 +566,7 @@ function buildGraph(issues: Issue[], projects: Projects, options: Options) {
       projects,
       node,
       issue,
-      options
+      options,
     )
   }
 
@@ -574,7 +579,7 @@ function getEdgeGraph(
   subgraphs: Subgraphs,
   issues: Issues,
   issue1: Issue,
-  issue2Id: string
+  issue2Id: string,
 ): Digraph | Subgraph {
   if (!options.clusterCycles) return graph
 
@@ -599,7 +604,7 @@ function addChildren(
   projects: Projects,
   node: Node,
   issue: Issue,
-  options: Options
+  options: Options,
 ) {
   if (!issue.children) {
     return
@@ -619,7 +624,7 @@ function addChildren(
         labels,
         idTitles,
         projects,
-        child
+        child,
       )
     }
     const edgeGraph = getEdgeGraph(
@@ -628,7 +633,7 @@ function addChildren(
       subgraphs,
       issues,
       issue,
-      childId
+      childId,
     )
     addEdge(edgeGraph, 'has parent', childNode, node)
     console.warn(`  has child ${idTitles[childId]}`)
@@ -645,7 +650,7 @@ function addRelations(
   projects: Projects,
   node: Node,
   issue: Issue,
-  options: Options
+  options: Options,
 ) {
   if (!issue.relations) {
     return
@@ -673,7 +678,7 @@ function addRelations(
           labels,
           idTitles,
           projects,
-          rel.relatedIssue
+          rel.relatedIssue,
         )
       }
     }
@@ -684,7 +689,7 @@ function addRelations(
         subgraphs,
         issues,
         issue,
-        relatedId
+        relatedId,
       )
       addEdge(edgeGraph, rel.type, node, relatedNode)
       console.warn(`  ${rel.type} ${relatedDescr}`)
@@ -711,18 +716,21 @@ function renderToFile(dot: string, format: 'png' | 'svg', outFile: string) {
     input: dot,
   })
   if (!outFile.endsWith(format)) {
-    die(`Output file ${outFile} extension doesn't match format ${format}`);
+    die(`Output file ${outFile} extension doesn't match format ${format}`)
   }
   if (result.status === 0) {
     console.log(`Wrote ${outFile}`)
   } else {
-    const dotFileToDebug = outFile.replace(new RegExp(`\\.${format}$`), '-debug.dot')
+    const dotFileToDebug = outFile.replace(
+      new RegExp(`\\.${format}$`),
+      '-debug.dot',
+    )
     if (outFile === dotFileToDebug) {
-      die(`Failed to generate debug filename for ${outFile}`);
+      die(`Failed to generate debug filename for ${outFile}`)
     }
     fs.writeFileSync(dotFileToDebug, dot)
     die(
-      `Failed to convert DOT file to image! Wrote DOT in ${dotFileToDebug} to debug`
+      `Failed to convert DOT file to image! Wrote DOT in ${dotFileToDebug} to debug`,
     )
   }
 }

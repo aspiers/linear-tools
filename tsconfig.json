@@ -2,9 +2,7 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": false,
     "experimentalDecorators": true,
-    "lib": [
-      "es2021",
-    ],
+    "lib": ["es2021"],
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": false,
@@ -16,8 +14,8 @@
     "strict": true,
     "target": "es2021",
     "declaration": true,
-    "declarationDir": "build/types"
+    "declarationDir": "build/types",
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
 }

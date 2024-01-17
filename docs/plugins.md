@@ -22,7 +22,7 @@ module.exports = {
 
     const desktopDirectories = filesystem.subdirectories(`~/Desktop`)
     print.info(desktopDirectories)
-  }
+  },
 }
 ```
 
@@ -34,7 +34,9 @@ An extension lets you add additional features to the `toolbox`.
 module.exports = (toolbox) => {
   const { print } = toolbox
 
-  toolbox.bar = () => { print.info('Bar!') }
+  toolbox.bar = () => {
+    print.info('Bar!')
+  }
 }
 ```
 
