@@ -3,8 +3,7 @@ import * as fs from 'fs'
 
 import { LinearClient, LinearRawResponse } from '@linear/sdk'
 
-import { buildGraph } from '../lib/graph-builder'
-import { toDot } from 'ts-graphviz'
+import { GraphBuilder } from '../lib/graph-builder'
 import { GraphOptions } from '../types/cli'
 import {
   Api,
@@ -255,9 +254,9 @@ export default async function graph(options: GraphOptions) {
 
   const [issues, projects] = await findRelatedIssues(api, options)
   if (!issues) return
-  const graph = buildGraph(issues, projects, options)
+  const builder = new GraphBuilder(issues, projects, options)
 
-  const dot = toDot(graph)
+  const dot = builder.toDot()
   if (options.svg) {
     renderToFile(dot, 'svg', options.svg)
   }
