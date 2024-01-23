@@ -150,6 +150,7 @@ async function findRelatedIssuesPaginated(
   api: Api,
   projectId: string,
   after: string | null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<[any[] | null, any]> {
   const afterFilter = after ? `, after: "${after}"` : ''
   const { status, data }: LinearRawResponse<DependenciesData> =
