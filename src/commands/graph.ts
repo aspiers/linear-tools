@@ -8,6 +8,28 @@ import { findRelatedIssues } from '../lib/queries'
 import { GraphOptions } from '../types/cli'
 import { die } from '../utils'
 
+export default async function graph(options: GraphOptions) {
+  const linearClient = new LinearClient({
+    apiKey: process.env.LINEAR_API_KEY,
+  })
+  const api = linearClient.client
+
+  const [issues, projects] = await findRelatedIssues(api, options.project)
+  if (!issues) return
+  const builder = new GraphBuilder(issues, projects, options)
+
+  const dot = builder.toDot()
+  if (options.svg) {
+    renderToFile(dot, 'svg', options.svg)
+  }
+  if (options.png) {
+    renderToFile(dot, 'png', options.png)
+  }
+  if (!(options.svg || options.png)) {
+    console.log(dot)
+  }
+}
+
 function renderToFile(dot: string, format: 'png' | 'svg', outFile: string) {
   // console.debug(`dot -T ${format} -o ${outFile}`)
   const result = spawnSync('dot', ['-T', format, '-o', outFile], {
@@ -30,27 +52,5 @@ function renderToFile(dot: string, format: 'png' | 'svg', outFile: string) {
     die(
       `Failed to convert DOT file to image! Wrote DOT in ${dotFileToDebug} to debug`,
     )
-  }
-}
-
-export default async function graph(options: GraphOptions) {
-  const linearClient = new LinearClient({
-    apiKey: process.env.LINEAR_API_KEY,
-  })
-  const api = linearClient.client
-
-  const [issues, projects] = await findRelatedIssues(api, options.project)
-  if (!issues) return
-  const builder = new GraphBuilder(issues, projects, options)
-
-  const dot = builder.toDot()
-  if (options.svg) {
-    renderToFile(dot, 'svg', options.svg)
-  }
-  if (options.png) {
-    renderToFile(dot, 'png', options.png)
-  }
-  if (!(options.svg || options.png)) {
-    console.log(dot)
   }
 }
