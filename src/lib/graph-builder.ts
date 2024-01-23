@@ -104,21 +104,23 @@ export class GraphBuilder {
     }
   }
 
-  // Figure out which graph or subgraph and edge belongs.
-  // If we're not clustering into subgraphs, or if the edge spans
-  // subgraphs, it will be placed in the main top-level graph.
-  getEdgeGraph(issue1: Issue, issue2Id: string): Digraph | Subgraph {
-    if (!this.options.clusterCycles) return this.graph
-
-    const issue2 = this.issuesById[issue2Id]
-    const issue1Cycle = issue1.cycle?.number.toString() || 'no_cycle'
-    const issue2Cycle = issue2?.cycle?.number.toString() || 'no_cycle'
-    if (issue1Cycle === issue2Cycle) {
-      // Issues are in same subgraph
-      return this.subgraphs[issue1Cycle]
+  ensureSubgraph(name: string): Subgraph {
+    if (this.subgraphs[name]) {
+      return this.subgraphs[name]
     }
-    // Edge spans subgraphs
-    return this.graph
+    const subgraphName = 'cluster_' + name
+    const label = name == 'no_cycle' ? 'No cycle' : `Cycle ${name}`
+    const subgraph = new Subgraph(subgraphName, {
+      [_.label]: label,
+      [_.labeljust]: 'l',
+      [_.fontsize]: 20,
+      [_.fontcolor]: 'green',
+      [_.penwidth]: 2,
+      [_.pencolor]: 'green',
+    })
+    this.graph.addSubgraph(subgraph)
+    this.subgraphs[name] = subgraph
+    return subgraph
   }
 
   addChildren(node: Node, issue: Issue) {
@@ -195,16 +197,6 @@ export class GraphBuilder {
     return true
   }
 
-  createNode(issue: Issue) {
-    const idTitle = `${issue.identifier}: ${issue.title}`
-    this.idTitles[issue.identifier] = idTitle
-
-    const nodeAttrs = this.getNodeAttrs(issue)
-    const node = new Node(issue.identifier, nodeAttrs)
-    this.nodes[issue.identifier] = node
-    return node
-  }
-
   // We decouple the creation of the node from the addition of it to the
   // graph, because it may be created during the first phase of issues
   // returned from queries, but only added to the graph in the second
@@ -215,6 +207,16 @@ export class GraphBuilder {
     const node = this.nodes[issue.identifier] || this.createNode(issue)
     graph.addNode(node)
     // console.warn(`+ New graph node for ${issue.identifier}`)
+    return node
+  }
+
+  createNode(issue: Issue) {
+    const idTitle = `${issue.identifier}: ${issue.title}`
+    this.idTitles[issue.identifier] = idTitle
+
+    const nodeAttrs = this.getNodeAttrs(issue)
+    const node = new Node(issue.identifier, nodeAttrs)
+    this.nodes[issue.identifier] = node
     return node
   }
 
@@ -279,6 +281,33 @@ export class GraphBuilder {
     return nodeAttrs
   }
 
+  isNodeHidden(issue: Issue): boolean {
+    if (issue.state?.type === 'canceled' && !this.options.cancelled) {
+      return true
+    }
+    if (issue.state?.type === 'completed' && !this.options.completed) {
+      return true
+    }
+    return false
+  }
+
+  // Figure out which graph or subgraph and edge belongs.
+  // If we're not clustering into subgraphs, or if the edge spans
+  // subgraphs, it will be placed in the main top-level graph.
+  getEdgeGraph(issue1: Issue, issue2Id: string): Digraph | Subgraph {
+    if (!this.options.clusterCycles) return this.graph
+
+    const issue2 = this.issuesById[issue2Id]
+    const issue1Cycle = issue1.cycle?.number.toString() || 'no_cycle'
+    const issue2Cycle = issue2?.cycle?.number.toString() || 'no_cycle'
+    if (issue1Cycle === issue2Cycle) {
+      // Issues are in same subgraph
+      return this.subgraphs[issue1Cycle]
+    }
+    // Edge spans subgraphs
+    return this.graph
+  }
+
   addEdge(
     graph: Digraph | Subgraph,
     relType: string,
@@ -300,35 +329,6 @@ export class GraphBuilder {
 
     const edge = new Edge(endpoints, attrs)
     graph.addEdge(edge)
-  }
-
-  isNodeHidden(issue: Issue): boolean {
-    if (issue.state?.type === 'canceled' && !this.options.cancelled) {
-      return true
-    }
-    if (issue.state?.type === 'completed' && !this.options.completed) {
-      return true
-    }
-    return false
-  }
-
-  ensureSubgraph(name: string): Subgraph {
-    if (this.subgraphs[name]) {
-      return this.subgraphs[name]
-    }
-    const subgraphName = 'cluster_' + name
-    const label = name == 'no_cycle' ? 'No cycle' : `Cycle ${name}`
-    const subgraph = new Subgraph(subgraphName, {
-      [_.label]: label,
-      [_.labeljust]: 'l',
-      [_.fontsize]: 20,
-      [_.fontcolor]: 'green',
-      [_.penwidth]: 2,
-      [_.pencolor]: 'green',
-    })
-    this.graph.addSubgraph(subgraph)
-    this.subgraphs[name] = subgraph
-    return subgraph
   }
 
   toDot(): string {
