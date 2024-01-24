@@ -65,7 +65,7 @@ selected projects.
 
 You can group issues into clusters according to their cycles:
 
-    yarn linear graph --project "My Linear project" --svg my-project.svg --cluster-cycles
+    yarn linear graph --project "My Linear project" --svg my-project.svg --cluster-by cycle
 
 On Linux, you can also view images directly in a Window
 

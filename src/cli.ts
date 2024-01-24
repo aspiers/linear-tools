@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv'
-import { Command } from '@commander-js/extra-typings'
+import { Command, Option } from '@commander-js/extra-typings'
 
 import graph from './commands/graph'
 import { GraphOptions } from './types/cli'
@@ -15,10 +15,10 @@ export function run() {
   program
     .command('graph')
     .description('Generate a dependency graph')
-    .option(
-      '--cycles, --cluster-cycles',
+    .addOption(new Option(
+      '-c, --cluster-by <attribute>',
       'Cluster issues by Linear cycle into subgraphs',
-    )
+    ).choices(['cycle'] as const))
     .option('--completed', 'Include completed issues')
     .option('--cancelled', 'Include cancelled issues')
     .option('--dupes, --duplicates', 'Include duplicate issues')

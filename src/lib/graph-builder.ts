@@ -24,6 +24,7 @@ import {
 } from '../types/data'
 
 const CENSOR_CONTENT = false
+const NO_CLUSTER = 'NO_CLUSTER'
 
 const SIZES = {
   0: [0.25, 10.0],
@@ -56,7 +57,6 @@ export class GraphBuilder {
     completed: false,
     cancelled: false,
     duplicates: false,
-    clusterCycles: false,
     hideExternal: false,
   }
 
@@ -71,8 +71,8 @@ export class GraphBuilder {
   }
 
   build(issues: Issue[]): void {
-    this.noCycleGraph = this.options.clusterCycles
-      ? this.ensureSubgraph('no_cycle')
+    this.noCycleGraph = this.options.clusterBy
+      ? this.ensureSubgraph(NO_CLUSTER)
       : this.graph
 
     for (const issue of issues) {
@@ -81,7 +81,7 @@ export class GraphBuilder {
       if (this.isNodeHidden(issue)) {
         continue
       }
-      const nodeGraph = this.options.clusterCycles
+      const nodeGraph = this.options.clusterBy
         ? issue.cycle
           ? this.ensureSubgraph(issue.cycle.number.toString())
           : this.noCycleGraph
@@ -109,9 +109,8 @@ export class GraphBuilder {
       return this.subgraphs[name]
     }
     const subgraphName = 'cluster_' + name
-    const label = name == 'no_cycle' ? 'No cycle' : `Cycle ${name}`
     const subgraph = new Subgraph(subgraphName, {
-      [_.label]: label,
+      [_.label]: this.subgraphLabel(name),
       [_.labeljust]: 'l',
       [_.fontsize]: 20,
       [_.fontcolor]: 'green',
@@ -121,6 +120,13 @@ export class GraphBuilder {
     this.graph.addSubgraph(subgraph)
     this.subgraphs[name] = subgraph
     return subgraph
+  }
+
+  subgraphLabel(name: string): string {
+    if (name == NO_CLUSTER) {
+      return 'No ' + this.options.clusterBy
+    }
+    return `Cycle ${name}`
   }
 
   addChildren(node: Node, issue: Issue) {
@@ -137,7 +143,7 @@ export class GraphBuilder {
       if (!childNode) {
         // Child issue wasn't registered yet; must be outside this project.
         childNode = this.registerNode(
-          this.options.clusterCycles ? this.subgraphs['no_cycle'] : this.graph,
+          this.options.clusterBy ? this.subgraphs[NO_CLUSTER] : this.graph,
           child,
         )
       }
@@ -169,9 +175,7 @@ export class GraphBuilder {
         external = true
         if (!this.options.hideExternal) {
           relatedNode = this.registerNode(
-            this.options.clusterCycles
-              ? this.subgraphs['no_cycle']
-              : this.graph,
+            this.options.clusterBy ? this.subgraphs[NO_CLUSTER] : this.graph,
             rel.relatedIssue,
           )
         }
@@ -295,11 +299,11 @@ export class GraphBuilder {
   // If we're not clustering into subgraphs, or if the edge spans
   // subgraphs, it will be placed in the main top-level graph.
   getEdgeGraph(issue1: Issue, issue2Id: string): Digraph | Subgraph {
-    if (!this.options.clusterCycles) return this.graph
+    if (!this.options.clusterBy) return this.graph
 
     const issue2 = this.issuesById[issue2Id]
-    const issue1Cycle = issue1.cycle?.number.toString() || 'no_cycle'
-    const issue2Cycle = issue2?.cycle?.number.toString() || 'no_cycle'
+    const issue1Cycle = issue1.cycle?.number.toString() || NO_CLUSTER
+    const issue2Cycle = issue2?.cycle?.number.toString() || NO_CLUSTER
     if (issue1Cycle === issue2Cycle) {
       // Issues are in same subgraph
       return this.subgraphs[issue1Cycle]
