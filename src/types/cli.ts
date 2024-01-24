@@ -3,7 +3,7 @@ export interface GraphOptions {
   completed?: boolean
   cancelled?: boolean
   duplicates?: boolean
-  clusterBy?: 'cycle'
+  clusterBy?: 'cycle' | 'project'
   hideExternal?: boolean
   svg?: string
   png?: string

@@ -18,7 +18,7 @@ export function run() {
     .addOption(new Option(
       '-c, --cluster-by <attribute>',
       'Cluster issues by Linear cycle into subgraphs',
-    ).choices(['cycle'] as const))
+    ).choices(['cycle', 'project'] as const))
     .option('--completed', 'Include completed issues')
     .option('--cancelled', 'Include cancelled issues')
     .option('--dupes, --duplicates', 'Include duplicate issues')

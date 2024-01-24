@@ -46,7 +46,7 @@ const PRIORITIES = {
 export class GraphBuilder {
   graph: Digraph
   subgraphs: Subgraphs = {}
-  noCycleGraph?: Digraph | Subgraph
+  noClusterGraph?: Digraph | Subgraph
   issuesById: Issues = {} // FIXME: not used by anything any more?
   nodes: Nodes = {}
   idTitles: Titles = {}
@@ -71,8 +71,8 @@ export class GraphBuilder {
   }
 
   build(issues: Issue[]): void {
-    this.noCycleGraph = this.options.clusterBy
-      ? this.ensureSubgraph(NO_CLUSTER)
+    this.noClusterGraph = this.options.clusterBy
+      ? this.ensureSubgraph(NO_CLUSTER, this.subgraphLabel(NO_CLUSTER))
       : this.graph
 
     for (const issue of issues) {
@@ -81,11 +81,7 @@ export class GraphBuilder {
       if (this.isNodeHidden(issue)) {
         continue
       }
-      const nodeGraph = this.options.clusterBy
-        ? issue.cycle
-          ? this.ensureSubgraph(issue.cycle.number.toString())
-          : this.noCycleGraph
-        : this.graph
+      const nodeGraph = this.graphForIssue(issue)
       this.registerNode(nodeGraph, issue)
     }
     console.warn(`Registered issues`)
@@ -104,13 +100,55 @@ export class GraphBuilder {
     }
   }
 
-  ensureSubgraph(name: string): Subgraph {
+  graphForIssue(issue: Issue): Digraph | Subgraph {
+    if (!this.options.clusterBy) {
+      return this.graph
+    }
+
+    const attrs = this.subgraphNameAndLabel(issue)
+    if (!attrs) {
+      // Unfortunately tsc is too dumb to realise that we already initialized
+      // this.noClusterGraph
+      if (!this.noClusterGraph) {
+        throw new Error(
+          'Tried to allocate issue to no cluster graph before it was defined',
+        )
+      }
+      return this.noClusterGraph
+    }
+    const [id, label] = attrs
+
+    return this.ensureSubgraph(id, label)
+  }
+
+  subgraphNameAndLabel(issue: Issue): [string, string] | undefined {
+    switch (this.options.clusterBy) {
+      case 'cycle':
+        return (
+          issue.cycle && [
+            issue.cycle.id,
+            this.subgraphLabel(issue.cycle.number.toString()),
+          ]
+        )
+      case 'project':
+        return [
+          issue.projectId,
+          this.subgraphLabel(this.projects[issue.projectId]),
+        ]
+      default:
+        throw new Error(
+          `BUG: invalid clustering option ${this.options.clusterBy}`,
+        )
+    }
+  }
+
+  ensureSubgraph(name: string, label: string): Subgraph {
     if (this.subgraphs[name]) {
       return this.subgraphs[name]
     }
     const subgraphName = 'cluster_' + name
     const subgraph = new Subgraph(subgraphName, {
-      [_.label]: this.subgraphLabel(name),
+      [_.label]: label,
       [_.labeljust]: 'l',
       [_.fontsize]: 20,
       [_.fontcolor]: 'green',
@@ -126,7 +164,13 @@ export class GraphBuilder {
     if (name == NO_CLUSTER) {
       return 'No ' + this.options.clusterBy
     }
-    return `Cycle ${name}`
+    const by = this.options.clusterBy
+    if (!by) {
+      throw new Error(
+        'BUG: tried to find label for subgraph when clustering not enabled',
+      )
+    }
+    return by.charAt(0).toUpperCase() + by.slice(1) + ' ' + name
   }
 
   addChildren(node: Node, issue: Issue) {
@@ -302,11 +346,11 @@ export class GraphBuilder {
     if (!this.options.clusterBy) return this.graph
 
     const issue2 = this.issuesById[issue2Id]
-    const issue1Cycle = issue1.cycle?.number.toString() || NO_CLUSTER
-    const issue2Cycle = issue2?.cycle?.number.toString() || NO_CLUSTER
-    if (issue1Cycle === issue2Cycle) {
+    const graph1 = this.graphForIssue(issue1)
+    const graph2 = issue2 ? this.graphForIssue(issue2) : null
+    if (graph1 === graph2) {
       // Issues are in same subgraph
-      return this.subgraphs[issue1Cycle]
+      return graph1
     }
     // Edge spans subgraphs
     return this.graph
