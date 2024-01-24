@@ -11,6 +11,39 @@ import {
   Projects,
 } from '../types/data'
 
+export async function findRelatedIssues(
+  api: Api,
+  projectSubstrings: string[],
+): Promise<[Issue[], Projects]> {
+  const issues: Issues = {}
+  const projects: Projects = {}
+
+  if (projectSubstrings.length == 0) {
+    throw new Error('findRelatedIssues() called with no project names')
+  }
+  for await (const projectSubstring of projectSubstrings) {
+    const project = await findProjectMatchingSubstring(api, projectSubstring)
+    if (!project) {
+      console.error(
+        `Couldn't find a unique project matching '${projectSubstring}'`,
+      )
+      process.exit(1)
+    }
+    console.warn(`Found project '${project.name}' with id ${project.id}`)
+    projects[project.id] = project.name
+    const relatedIssues = await findIssuesRelatedToProject(api, project.id)
+    for (const issue of relatedIssues) {
+      // relatedIssues can span projects, so we need to deal with potential
+      // duplicates here.  If we get an issue twice from different projects,
+      // make sure we save the one with the most information.
+      if (!issues[issue.identifier] || issue.children) {
+        issues[issue.identifier] = issue
+      }
+    }
+  }
+  return [Object.values(issues), projects]
+}
+
 async function findProjectsMatchingSubstring(
   api: Api,
   projectSubstring?: string,
@@ -70,39 +103,6 @@ async function findProjectMatchingSubstring(
   }
 
   return projects[0]
-}
-
-export async function findRelatedIssues(
-  api: Api,
-  projectSubstrings: string[],
-): Promise<[Issue[], Projects]> {
-  const issues: Issues = {}
-  const projects: Projects = {}
-
-  if (projectSubstrings.length == 0) {
-    throw new Error('findRelatedIssues() called with no project names')
-  }
-  for await (const projectSubstring of projectSubstrings) {
-    const project = await findProjectMatchingSubstring(api, projectSubstring)
-    if (!project) {
-      console.error(
-        `Couldn't find a unique project matching '${projectSubstring}'`,
-      )
-      process.exit(1)
-    }
-    console.warn(`Found project '${project.name}' with id ${project.id}`)
-    projects[project.id] = project.name
-    const relatedIssues = await findIssuesRelatedToProject(api, project.id)
-    for (const issue of relatedIssues) {
-      // relatedIssues can span projects, so we need to deal with potential
-      // duplicates here.  If we get an issue twice from different projects,
-      // make sure we save the one with the most information.
-      if (!issues[issue.identifier] || issue.children) {
-        issues[issue.identifier] = issue
-      }
-    }
-  }
-  return [Object.values(issues), projects]
 }
 
 async function findIssuesRelatedToProject(
