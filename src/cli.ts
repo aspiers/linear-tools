@@ -15,10 +15,12 @@ export function run() {
   program
     .command('graph')
     .description('Generate a dependency graph')
-    .addOption(new Option(
-      '-c, --cluster-by <attribute>',
-      'Cluster issues by Linear cycle into subgraphs',
-    ).choices(['cycle', 'project'] as const))
+    .addOption(
+      new Option(
+        '-c, --cluster-by <attribute>',
+        'Cluster issues by Linear cycle into subgraphs',
+      ).choices(['cycle', 'project'] as const),
+    )
     .option('--completed', 'Include completed issues')
     .option('--cancelled', 'Include cancelled issues')
     .option('--dupes, --duplicates', 'Include duplicate issues')
