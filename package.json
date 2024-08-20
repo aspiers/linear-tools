@@ -1,7 +1,7 @@
 {
-  "name": "linear-analysis",
+  "name": "linear-tools",
   "version": "0.0.1",
-  "description": "linear CLI",
+  "description": "linear CLI utility commands",
   "private": true,
   "types": "build/types/types.d.ts",
   "bin": "bin/linear",

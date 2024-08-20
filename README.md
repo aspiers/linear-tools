@@ -1,38 +1,50 @@
-# linear.app issue tracker analysis
+# linear.app CLI utility tools
 
-A CLI for [linear.app](https://linear.app) for analysing issue data
-retrieved via the Linear API.
+This is A CLI for [linear.app](https://linear.app) which uses the
+Linear API to add functionality missing from the official UI.
 
-Currently it only plots issue dependency graphs within a given project.
+Currently only the following are supported:
 
-**WARNING:** this is currently a very quick and dirty hack; please
-consider it an alpha release.  No tests have been written, and it's
-liable to break at any moment.  Nevertheless it's only _reading_ data
-from the Linear API, not writing anything, so at least in _theory_
-there should be no risk at all in trying it ... but equally no
+- plotting issue dependency graphs within a given project
+
+- helping "demote" / "convert" workspace labels back into team labels
+  (in reality this just creates corresponding team labels, switches
+  issues to use these, and then eventually the old labels can be
+  removed)
+
+**WARNING:** this is currently a quick and dirty hack; please
+consider it an alpha release.  No tests have been written, and
+no guarantees are made about its reliability.  Proceed at your
+own risk.
+
+That said, if you only use it to plot dependency graphs, it's only
+_reading_ data from the Linear API, not writing anything, so in
+_theory_ there should be no risk in trying it ... but equally no
 guarantee is offered.  Caveat emptor.
 
 ## Installation
 
-First install [Graphviz](https://graphviz.org/).  On MacOS,
-it should be simple using [Homebrew](https://brew.sh/):
-
-    brew install graphviz
-
-You will also need [Node.js](https://nodejs.org/en/), at least version
+You will need [Node.js](https://nodejs.org/en/), at least version
 15.14.0 (for `String.prototype.replaceAll`).  This can be satisfied
 via Homebrew, e.g.
 
-    brew install node@16
+    brew install node@18
 
 or by first [installing `nvm`](https://nvm.sh) and then installing
 Node.js v16 or later:
 
-    nvm use 16
+    nvm use 18
 
 Finally, install the various npm dependencies:
 
     yarn install
+
+
+If you want to use it to plot graphs, you will also need to install
+[Graphviz](https://graphviz.org/).  On MacOS, it should be simple
+using [Homebrew](https://brew.sh/):
+
+    brew install graphviz
 
 ## Usage
 
@@ -40,7 +52,9 @@ First you need to get API key from Linear web UI and set it here:
 
     export LINEAR_API_KEY=...
 
-Then you can simply generate graph in SVG format as follows:
+### Plotting dependency graphs
+
+You can simply generate graph in SVG format as follows:
 
     yarn linear graph --project "My Linear project" --svg my-project.svg
 
@@ -97,6 +111,31 @@ on the graph because it had some kind of relationship with issues
 obtained from the query.
 
 Issues with `epic` in the title will be given a double circle shape.
+
+### Demoting workspace labels
+
+**PLEASE EXERCISE CAUTION:** Unlike the graphing command, this **changes**
+data in your Linear workspace, and is only lightly tested.  It should be
+safe, but make sure you check everything as you go.
+
+To be safe, currently it stops execution after the first issue in the
+for loop.  Remove the corresponding `break` if you're feeling brave.
+
+Usage is as follows:
+
+    yarn linear label demote 'Name of workspace label' 'Name of team to demote to'
+
+Currently it just creates the new labels (with a `(team name)` suffix,
+since you can't have two labels with the same name, even when they
+have different scopes), and then switches the issues to use them.
+
+It's idempotent so (at least in theory) you can run it multiple times
+and
+
+Still TODO:
+
+- remove the old workspace labels when they're no longer used by any issues
+- rename the new team labels to have the same name as the old workspace labels
 
 # License
 
