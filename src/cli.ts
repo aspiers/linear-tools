@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv'
 import { Command, Option } from '@commander-js/extra-typings'
 
 import graph from './commands/graph'
+import { demote } from './commands/label'
 import { GraphOptions } from './types/cli'
 
 export function run() {
@@ -33,6 +34,17 @@ export function run() {
     .option('--png <file>', 'Output a PNG image to the file specified')
     .action(async (options: GraphOptions) => {
       await graph(options)
+    })
+
+  const label = program.command('label').description('Manage labels')
+
+  label
+    .command('demote')
+    .description('Demote a workspace label to a team')
+    .argument('<label>', 'name of workspace label')
+    .argument('<team>', 'name of team to demote to')
+    .action(async (label: string, team: string) => {
+      await demote({ label, team })
     })
 
   program.parse()

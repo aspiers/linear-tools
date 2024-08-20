@@ -8,3 +8,8 @@ export interface GraphOptions {
   svg?: string
   png?: string
 }
+
+export interface LabelDemoteOptions {
+  label: string
+  team: string
+}
