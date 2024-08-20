@@ -1,6 +1,6 @@
 import { LinearGraphQLClient } from '@linear/sdk'
 
-import { Node } from 'ts-graphviz'
+import { Node, Subgraph } from 'ts-graphviz'
 
 export type Subgraphs = Record<string, Subgraph>
 export type Issues = Record<string, Issue>
