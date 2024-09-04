@@ -13,10 +13,15 @@ export default async function demote(
       client,
       options.label,
     )
+    const workspaceParentLabel = await getWorkspaceParentLabel(
+      client,
+      workspaceLabel,
+    )
     const team = await fetchTeam(client, options.team)
     const teamParentLabel = await maybeEnsureTeamParentLabel(
       client,
       workspaceLabel,
+      workspaceParentLabel,
       team,
     )
     const teamLabel = await ensureTeamLabel(
@@ -104,12 +109,9 @@ async function fetchTeam(
   return teams.nodes[0]
 }
 
-// If workspaceLabel has a parent, make sure there is a corresponding
-// team parent label.
-async function maybeEnsureTeamParentLabel(
+async function getWorkspaceParentLabel(
   client: LinearClient,
   workspaceLabel: IssueLabel,
-  team: Team,
 ): Promise<IssueLabel | null> {
   const parent = await workspaceLabel.parent
   if (!parent) {
@@ -119,6 +121,17 @@ async function maybeEnsureTeamParentLabel(
     return null
   }
   const workspaceParentLabel = await fetchLabelById(client, parent.id)
+  return workspaceParentLabel
+}
+
+// If workspaceLabel has a parent, make sure there is a corresponding
+// team parent label.
+async function maybeEnsureTeamParentLabel(
+  client: LinearClient,
+  workspaceLabel: IssueLabel,
+  workspaceParentLabel: IssueLabel,
+  team: Team,
+): Promise<IssueLabel | null> {
   const teamParentLabelName = getTeamLabelName(
     workspaceParentLabel.name,
     team.name,
