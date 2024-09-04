@@ -118,9 +118,6 @@ Issues with `epic` in the title will be given a double circle shape.
 data in your Linear workspace, and is only lightly tested.  It should be
 safe, but make sure you check everything as you go.
 
-To be safe, currently it stops execution after the first issue in the
-for loop.  Remove the corresponding `break` if you're feeling brave.
-
 Usage is as follows:
 
     yarn linear label demote 'Name of workspace label' 'Name of team to demote to'
@@ -129,13 +126,16 @@ Currently it just creates the new labels (with a `(team name)` suffix,
 since you can't have two labels with the same name, even when they
 have different scopes), and then switches the issues to use them.
 
-It's idempotent so (at least in theory) you can run it multiple times
-and
+It's idempotent so (at least in theory) you can run it multiple times,
+and in fact you will need to:
 
-Still TODO:
+- Currently there is no pagination, so if you have a lot of issues
+  with that workspace label, you may need to run it once per page
+  of the query results for those issues.
 
-- remove the old workspace labels when they're no longer used by any issues
-- rename the new team labels to have the same name as the old workspace labels
+- Once the label has been migrated for all issues which had it, you'll
+  need to run it one final time to delete the workspace label and
+  rename the new team label.
 
 # License
 

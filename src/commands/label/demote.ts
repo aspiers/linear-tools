@@ -26,6 +26,11 @@ export default async function demote(
       teamParentLabel,
     )
     const issues = await fetchIssuesWithLabel(client, workspaceLabel)
+    if (issues.length == 0) {
+      await deleteLabel(client, workspaceLabel)
+      await renameLabel(client, teamLabel, workspaceLabel.name)
+      return
+    }
 
     const { added, removed } = await migrateIssuesToTeamLabel(
       client,
@@ -193,6 +198,31 @@ async function createTeamLabel(
   return newLabel
 }
 
+async function deleteLabel(
+  client: LinearClient,
+  label: IssueLabel,
+): Promise<void> {
+  const payload = await client.deleteIssueLabel(label.id)
+  if (payload.success) {
+    console.log(`Deleted label ${label.name} (${label.id})`)
+  } else {
+    die(`Failed to delete label ${label.name}`)
+  }
+}
+
+async function renameLabel(
+  client: LinearClient,
+  label: IssueLabel,
+  newName: string,
+): Promise<void> {
+  const payload = await client.updateIssueLabel(label.id, { name: newName })
+  if (payload.success) {
+    console.log(`Renamed label ${label.name} (${label.id}) to ${newName}`)
+  } else {
+    die(`Failed to rename label ${label.name} (${label.id}) to ${newName}`)
+  }
+}
+
 function getTeamLabelName(
   workspaceLabelName: string,
   teamName: string,
@@ -240,7 +270,6 @@ async function migrateIssuesToTeamLabel(
       console.log(`      Doesn't have label ${workspaceLabel.name}`)
     }
     await updateIssueLabels(client, issue, desiredlabelIds)
-    break
   }
   return { added, removed }
 }
