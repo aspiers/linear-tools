@@ -32,22 +32,6 @@ export default async function demote(
 
     await deleteLabel(client, workspaceLabel)
     await renameLabel(client, teamLabel, workspaceLabel.name)
-
-    if (!workspaceParentLabel) return
-    const parentIssues = await fetchIssuesWithLabel(
-      client,
-      workspaceParentLabel,
-    )
-    if (parentIssues.length > 0) {
-      console.log(
-        `${parentIssues.length} issue(s) still have workspace parent label ${workspaceParentLabel.name}; can't remove it.`,
-      )
-      return
-    }
-    await deleteLabel(client, workspaceParentLabel)
-    if (teamParentLabel) {
-      await renameLabel(client, teamParentLabel, workspaceParentLabel.name)
-    }
   } catch (error: unknown) {
     die(String(error))
   }
