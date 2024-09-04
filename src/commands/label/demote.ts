@@ -227,9 +227,9 @@ async function deleteLabel(
 ): Promise<void> {
   const payload = await client.deleteIssueLabel(label.id)
   if (payload.success) {
-    console.log(`Deleted label ${label.name} (${label.id})`)
+    console.log(`Deleted label "${label.name}" (${label.id})`)
   } else {
-    die(`Failed to delete label ${label.name}`)
+    die(`Failed to delete label "${label.name}"`)
   }
 }
 
@@ -240,9 +240,9 @@ async function renameLabel(
 ): Promise<void> {
   const payload = await client.updateIssueLabel(label.id, { name: newName })
   if (payload.success) {
-    console.log(`Renamed label ${label.name} (${label.id}) to ${newName}`)
+    console.log(`Renamed label "${label.name}" (${label.id}) to "${newName}"`)
   } else {
-    die(`Failed to rename label ${label.name} (${label.id}) to ${newName}`)
+    die(`Failed to rename label "${label.name}" (${label.id}) to "${newName}"`)
   }
 }
 
