@@ -18,12 +18,9 @@ export default async function demote(
       workspaceLabel,
     )
     const team = await fetchTeam(client, options.team)
-    const teamParentLabel = await maybeEnsureTeamParentLabel(
-      client,
-      workspaceLabel,
-      workspaceParentLabel,
-      team,
-    )
+    const teamParentLabel =
+      workspaceParentLabel &&
+      (await ensureTeamParentLabel(client, workspaceParentLabel, team))
     const teamLabel = await ensureTeamLabel(
       client,
       workspaceLabel,
@@ -47,9 +44,24 @@ export default async function demote(
       console.log(
         `${issues.length} issue(s) still have workspace label ${workspaceLabel.name}; run again.`,
       )
-    } else {
-      await deleteLabel(client, workspaceLabel)
-      await renameLabel(client, teamLabel, workspaceLabel.name)
+      return
+    }
+    await deleteLabel(client, workspaceLabel)
+    await renameLabel(client, teamLabel, workspaceLabel.name)
+    if (!workspaceParentLabel) return
+    const parentIssues = await fetchIssuesWithLabel(
+      client,
+      workspaceParentLabel,
+    )
+    if (parentIssues.length > 0) {
+      console.log(
+        `${parentIssues.length} issue(s) still have workspace parent label ${workspaceParentLabel.name}; can't remove it.`,
+      )
+      return
+    }
+    await deleteLabel(client, workspaceParentLabel)
+    if (teamParentLabel) {
+      await renameLabel(client, teamParentLabel, workspaceParentLabel.name)
     }
   } catch (error: unknown) {
     die(String(error))
@@ -126,9 +138,8 @@ async function getWorkspaceParentLabel(
 
 // If workspaceLabel has a parent, make sure there is a corresponding
 // team parent label.
-async function maybeEnsureTeamParentLabel(
+async function ensureTeamParentLabel(
   client: LinearClient,
-  workspaceLabel: IssueLabel,
   workspaceParentLabel: IssueLabel,
   team: Team,
 ): Promise<IssueLabel | null> {
