@@ -34,13 +34,13 @@ export default async function demote(
       teamLabel,
     )
     console.log(
-      `Team label added to ${added} issues; workspace label removed from ${removed} issues`,
+      `Team label added to ${added} issues; workspace label ${workspaceLabel.name} removed from ${removed} issues`,
     )
 
     issues = await fetchIssuesWithLabel(client, workspaceLabel)
     if (issues.length > 0) {
       console.log(
-        `${issues.length} issue(s) still have workspace label; run again.`,
+        `${issues.length} issue(s) still have workspace label ${workspaceLabel.name}; run again.`,
       )
     } else {
       await deleteLabel(client, workspaceLabel)
