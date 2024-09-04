@@ -122,11 +122,30 @@ Usage is as follows:
 
     yarn linear label demote 'Name of workspace label' 'Name of team to demote to'
 
-Currently it just creates the new labels (with a `(team name)` suffix,
-since you can't have two labels with the same name, even when they
-have different scopes), and then switches the issues to use them.
-
 It's idempotent so (at least in theory) you can run it multiple times.
+
+It works in the following way:
+
+- If the workspace label to be demoted is part of a label group,
+  create a corresponding label group in the team (with a `(team name)`
+  suffix, since you can't have two labels with the same name, even
+  when they have different scopes).
+
+- Create a corresponding team label.  If the workspace label was part
+  of a workspace label group, make the new team label part of the
+  corresponding team label group.  Again this will have the same
+  `(team name)` suffix, for the same reasons.
+
+- Add all issues to the new team label, and remove from the old
+  workspace label.
+
+- Remove the old workspace label.
+
+- Rename the new team label to drop the suffix.
+
+- If part of a label group, remove the old workspace label group
+  parent if no other issues belong to it, and then rename the new
+  label group parent to drop the suffix.
 
 # License
 
