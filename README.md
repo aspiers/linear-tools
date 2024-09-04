@@ -127,9 +127,6 @@ since you can't have two labels with the same name, even when they
 have different scopes), and then switches the issues to use them.
 
 It's idempotent so (at least in theory) you can run it multiple times.
-In fact you may need to, since currently there is no pagination, so if
-you have a lot of issues with that workspace label, you may need to
-run it once per page of the query results for those issues.
 
 # License
 

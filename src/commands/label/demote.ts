@@ -27,27 +27,12 @@ export default async function demote(
       team,
       teamParentLabel,
     )
-    let issues = await fetchIssuesWithLabel(client, workspaceLabel)
 
-    const { added, removed } = await migrateIssuesToTeamLabel(
-      client,
-      issues,
-      workspaceLabel,
-      teamLabel,
-    )
-    console.log(
-      `Team label added to ${added} issues; workspace label ${workspaceLabel.name} removed from ${removed} issues`,
-    )
+    await migrateIssues(client, workspaceLabel, teamLabel)
 
-    issues = await fetchIssuesWithLabel(client, workspaceLabel)
-    if (issues.length > 0) {
-      console.log(
-        `${issues.length} issue(s) still have workspace label ${workspaceLabel.name}; run again.`,
-      )
-      return
-    }
     await deleteLabel(client, workspaceLabel)
     await renameLabel(client, teamLabel, workspaceLabel.name)
+
     if (!workspaceParentLabel) return
     const parentIssues = await fetchIssuesWithLabel(
       client,
@@ -65,6 +50,31 @@ export default async function demote(
     }
   } catch (error: unknown) {
     die(String(error))
+  }
+}
+
+async function migrateIssues(
+  client: LinearClient,
+  workspaceLabel: IssueLabel,
+  teamLabel: IssueLabel,
+) {
+  while (true) {
+    const issues = await fetchIssuesWithLabel(client, workspaceLabel)
+    if (issues.length === 0) return
+
+    console.log(
+      `${issues.length} issue(s) still have workspace label ${workspaceLabel.name}.`,
+    )
+
+    const { added, removed } = await migrateIssuesToTeamLabel(
+      client,
+      issues,
+      workspaceLabel,
+      teamLabel,
+    )
+    console.log(
+      `Team label added to ${added} issues; workspace label ${workspaceLabel.name} removed from ${removed} issues`,
+    )
   }
 }
 
