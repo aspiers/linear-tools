@@ -126,16 +126,10 @@ Currently it just creates the new labels (with a `(team name)` suffix,
 since you can't have two labels with the same name, even when they
 have different scopes), and then switches the issues to use them.
 
-It's idempotent so (at least in theory) you can run it multiple times,
-and in fact you will need to:
-
-- Currently there is no pagination, so if you have a lot of issues
-  with that workspace label, you may need to run it once per page
-  of the query results for those issues.
-
-- Once the label has been migrated for all issues which had it, you'll
-  need to run it one final time to delete the workspace label and
-  rename the new team label.
+It's idempotent so (at least in theory) you can run it multiple times.
+In fact you may need to, since currently there is no pagination, so if
+you have a lot of issues with that workspace label, you may need to
+run it once per page of the query results for those issues.
 
 # License
 

@@ -25,12 +25,7 @@ export default async function demote(
       team,
       teamParentLabel,
     )
-    const issues = await fetchIssuesWithLabel(client, workspaceLabel)
-    if (issues.length == 0) {
-      await deleteLabel(client, workspaceLabel)
-      await renameLabel(client, teamLabel, workspaceLabel.name)
-      return
-    }
+    let issues = await fetchIssuesWithLabel(client, workspaceLabel)
 
     const { added, removed } = await migrateIssuesToTeamLabel(
       client,
@@ -41,6 +36,16 @@ export default async function demote(
     console.log(
       `Team label added to ${added} issues; workspace label removed from ${removed} issues`,
     )
+
+    issues = await fetchIssuesWithLabel(client, workspaceLabel)
+    if (issues.length > 0) {
+      console.log(
+        `${issues.length} issue(s) still have workspace label; run again.`,
+      )
+    } else {
+      await deleteLabel(client, workspaceLabel)
+      await renameLabel(client, teamLabel, workspaceLabel.name)
+    }
   } catch (error: unknown) {
     die(String(error))
   }
