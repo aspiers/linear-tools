@@ -143,9 +143,16 @@ It works in the following way:
 
 - Rename the new team label to drop the suffix.
 
-- If part of a label group, remove the old workspace label group
-  parent if no other issues belong to it, and then rename the new
-  label group parent to drop the suffix.
+Note that if the old workspace label was the last one remaining in a
+label group, the group won't be automatically deleted, which also
+prevents dropping the team name suffix from the new team label group.
+So if you want those final bits of cleanup, you'll have to do them
+manually.
+
+In the future, these could be added to the automation by querying the
+`children` field on the workspace label group to check if there are
+any other labels remaining in the group, and if not, deleting the
+group and renaming the corresponding team label group.
 
 # License
 
